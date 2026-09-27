@@ -54,12 +54,18 @@ a { color: var(--vurgu); }
 }
 .ozet strong { color: var(--vurgu); white-space: nowrap; }
 
-/* Harita */
+/* Ana alan */
 .icerik {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 60vh;
+}
+.harita-alani {
   position: relative;
   flex: 1;
   display: flex;
-  min-height: 60vh;
+  min-height: 0;
 }
 .harita {
   flex: 1;

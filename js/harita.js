@@ -333,6 +333,8 @@ function ozetHesapla(kayitlar) {
   };
 }
 
+// Özet her zaman il genelidir: sitede ilçe/okul kıyaslaması yapılmaz
+// (kullanıcı kararı; ayrıntılı döküm yalnızca yöneticinin Sheets'inde).
 function ozetGoster(kayitlar) {
   const kutu = document.getElementById("ozet");
   kutu.replaceChildren();
@@ -383,7 +385,7 @@ function haritaKur() {
   return L.map("harita", { zoomSnap: 0.25, maxZoom: 13 });
 }
 
-async function ilceleriYukle(harita) {
+async function ilceleriYukle(harita, ilceTiklandi) {
   const yanit = await fetch("data/ilceler.geojson");
   if (!yanit.ok) throw new Error(`ilceler.geojson: HTTP ${yanit.status}`);
   const geojson = await yanit.json();
@@ -393,19 +395,11 @@ async function ilceleriYukle(harita) {
   adKatmani.style.zIndex = 450;
   adKatmani.style.pointerEvents = "none";
 
+  const ilceKatmanlari = new Map();
   let seciliIlce = null;
   const ilceStiliniYenile = (ilce) => {
     katman.resetStyle(ilce);
     if (ilce === seciliIlce) ilce.setStyle(ILCE_SECILI_STILI);
-  };
-  const ilceSec = (ilce) => {
-    const onceki = seciliIlce;
-    seciliIlce = ilce;
-    if (onceki) ilceStiliniYenile(onceki);
-    if (ilce) {
-      ilce.setStyle(ILCE_SECILI_STILI);
-      ilce.bringToFront();
-    }
   };
 
   const katman = L.geoJSON(geojson, {
@@ -426,21 +420,38 @@ async function ilceleriYukle(harita) {
       ilce.on("mouseout", () => ilceStiliniYenile(ilce));
       ilce.on("click", (olay) => {
         L.DomEvent.stopPropagation(olay);
-        ilceSec(ilce === seciliIlce ? null : ilce);
+        ilceTiklandi(ozellik.properties.ad);
       });
+      ilceKatmanlari.set(ozellik.properties.ad, ilce);
     }
   }).addTo(harita);
-
-  // Harita boşluğuna tıklanınca seçim kalkar.
-  harita.on("click", () => ilceSec(null));
 
   const sinirlar = katman.getBounds();
   harita.fitBounds(sinirlar, { padding: [12, 12] });
   // Altlık olmadığı için il dışına kaydırma ve fazla uzaklaşma sınırlanır.
-  harita.setMinZoom(harita.getZoom() - 1);
+  // En küçük yakınlaştırma TAM SAYI olmalı: ondalıklı olursa markercluster
+  // küme düzeylerini yanlış kuruyor ve tek başına duran işaretçileri çizmiyor.
+  harita.setMinZoom(Math.floor(harita.getZoom()) - 1);
   harita.ilSiniri = sinirlar.pad(0.3);
   harita.setMaxBounds(harita.ilSiniri);
-  return geojson;
+
+  // Seçili ilçeyi koyulaştırır ve haritayı ona (seçim yoksa ilin tamamına) yaklaştırır.
+  function ilceVurgula(ad) {
+    const yeni = ad ? ilceKatmanlari.get(ad) : null;
+    if (yeni === seciliIlce) return;
+    const onceki = seciliIlce;
+    seciliIlce = yeni;
+    if (onceki) ilceStiliniYenile(onceki);
+    if (yeni) {
+      yeni.setStyle(ILCE_SECILI_STILI);
+      yeni.bringToFront();
+      harita.fitBounds(yeni.getBounds(), { padding: [24, 24], maxZoom: 11 });
+    } else {
+      harita.fitBounds(sinirlar, { padding: [12, 12] });
+    }
+  }
+
+  return { geojson, ilceVurgula };
 }
 
 async function jsonGetir(adres) {
@@ -543,7 +554,7 @@ function isaretcileriCiz(harita, kayitlar, ilceGeolari, detay) {
     for (const m of acikTekler) { m.acik = false; m.ikonuYenile(); }
     acikTekler.clear();
   };
-  harita.on("click zoomstart", tekleriKapat);
+  harita.on("zoomstart", tekleriKapat);
 
   const noktalar = new Map();
   for (const kayit of kayitlar) {
@@ -577,7 +588,7 @@ function isaretcileriCiz(harita, kayitlar, ilceGeolari, detay) {
     kume.addLayer(isaretci);
   }
   harita.addLayer(kume);
-  return kume;
+  return { tekleriKapat };
 }
 
 // ---------------------------------------------------------------------------
@@ -699,9 +710,14 @@ function detayPaneliKur(harita, tumKayitlar) {
 
   kapatDugmesi.addEventListener("click", kapat);
   document.addEventListener("keydown", (olay) => { if (olay.key === "Escape") kapat(); });
-  harita.on("click", kapat);
 
-  return { ac, kapat, isaretciler, seciliId: () => secili?.id };
+  return {
+    ac,
+    kapat,
+    isaretciler,
+    seciliId: () => secili?.id,
+    acikMi: () => panel.classList.contains("acik")
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -734,15 +750,17 @@ async function baslat() {
   const harita = haritaKur();
   durumGoster("Harita yükleniyor…");
 
+  // İlçe tıklaması, işaretçiler hazır olunca bağlanır.
+  let ilceTiklandi = () => {};
   let ilceler;
   try {
-    ilceler = await ilceleriYukle(harita);
+    ilceler = await ilceleriYukle(harita, (ad) => ilceTiklandi(ad));
   } catch (hata) {
     console.error(hata);
     durumGoster("İlçe sınırları şu an yüklenemedi. Lütfen sayfayı daha sonra yenileyin.", true);
     return;
   }
-  const ilceGeolari = new Map(ilceler.features.map((f) => [f.properties.ad, ilceGeometrisiHazirla(f)]));
+  const ilceGeolari = new Map(ilceler.geojson.features.map((f) => [f.properties.ad, ilceGeometrisiHazirla(f)]));
   lejantEkle(harita);
 
   durumGoster("Etkinlikler yükleniyor…");
@@ -752,7 +770,27 @@ async function baslat() {
     const kayitlar = kayitlariDogrula(hamKayitlar, new Set(ilceGeolari.keys()), bilinenOkullar);
     ozetGoster(kayitlar);
     const detay = detayPaneliKur(harita, kayitlar);
-    isaretcileriCiz(harita, kayitlar, ilceGeolari, detay);
+    const isaretler = isaretcileriCiz(harita, kayitlar, ilceGeolari, detay);
+
+    // İlçeye tıklamak yalnızca ilçeyi vurgular ve yakınlaştırır (özet
+    // değişmez); aynı ilçeye tekrar tıklamak seçimi kaldırır. Detay kartı
+    // açıksa ilk tıklama yalnızca kartı kapatır.
+    let seciliIlce = "";
+    const ilceSec = (ad) => {
+      seciliIlce = ad;
+      ilceler.ilceVurgula(ad);
+    };
+    ilceTiklandi = (ad) => {
+      isaretler.tekleriKapat();
+      if (detay.acikMi()) { detay.kapat(); return; }
+      ilceSec(seciliIlce === ad ? "" : ad);
+    };
+    // İl dışındaki boşluğa tıklamak: önce kartı kapatır, sonra seçimi kaldırır.
+    harita.on("click", () => {
+      isaretler.tekleriKapat();
+      if (detay.acikMi()) { detay.kapat(); return; }
+      if (seciliIlce) ilceSec("");
+    });
     if (YEREL_MI) durumGoster(`Yerel test: uydurma veri gösteriliyor (${kayitlar.length} etkinlik).`);
     else durumGizle();
   } catch (hata) {
