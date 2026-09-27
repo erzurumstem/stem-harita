@@ -162,9 +162,10 @@ function satirlariOku() {
   if (veri.length < 2) return [];
   const basliklar = veri[0].map(temizle);
   return veri.slice(1)
-    .filter((satir) => tarihMi(satir[0]))
-    .map((satir) => {
-      const nesne = { zaman: satir[0] };
+    .map((satir, i) => ({ satir, satirNo: i + 2 }))
+    .filter(({ satir }) => tarihMi(satir[0]))
+    .map(({ satir, satirNo }) => {
+      const nesne = { zaman: satir[0], satirNo };
       basliklar.forEach((b, i) => { if (i > 0) nesne[b] = satir[i]; });
       return nesne;
     });
@@ -206,6 +207,7 @@ function kayitOlustur(satir, saatDilimi) {
     aciklama: temizle(satir[SORU.aciklama]),
     ogretmenAdi: adiKisalt(tamAd),
     // Yalnızca Özet sayfası için:
+    satirNo: satir.satirNo,
     okulAnahtari,
     ogretmenAnahtari,
     grupAnahtari
@@ -299,6 +301,45 @@ function kirilim(kayitlar, alan, etiketler) {
     });
 }
 
+// ---------------------------------------------------------------------------
+// Kontrol edilecekler: onaydan önce yöneticinin bakması gereken kayıtlar.
+
+// "2026-2027" → 2026-09-01 … 2027-08-31
+function donemAraligi() {
+  const [bas, son] = AYARLAR.donem.split("-");
+  return { baslangic: `${bas}-09-01`, bitis: `${son}-08-31` };
+}
+
+// Okul adındaki türe göre beklenen sınıf düzeyleri. Karma (kulüp) her
+// okulda olabilir. Ad birden çok tür içeriyorsa hepsine izin verilir.
+const OKUL_TURLERI = [
+  { kelime: "anaokul", duzeyler: ["okuloncesi"] },
+  { kelime: "ilkokul", duzeyler: ["okuloncesi", "1-4"] },
+  { kelime: "ortaokul", duzeyler: ["5-8"] },
+  { kelime: "lise", duzeyler: ["9-12"] }
+];
+
+function kayitUyarilari(k, bugun) {
+  const uyarilar = [];
+  const ad = sadelestir(k.okulAdi);
+  const turler = OKUL_TURLERI.filter((t) => ad.includes(t.kelime));
+  if (turler.length && k.sinifDuzeyi && k.sinifDuzeyi !== "karma") {
+    const izinli = [].concat(...turler.map((t) => t.duzeyler));
+    if (!izinli.includes(k.sinifDuzeyi)) {
+      uyarilar.push(`Okul türü ile sınıf uyuşmuyor (${SINIF_DUZEYI[k.sinifDuzeyi]})`);
+    }
+  }
+  const { baslangic, bitis } = donemAraligi();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(k.tarih)) uyarilar.push("Tarih boş veya geçersiz");
+  else if (k.tarih < baslangic || k.tarih > bitis) uyarilar.push("Tarih dönem dışında (sitede görünmez)");
+  else if (k.tarih > bugun) uyarilar.push("İleri tarihli etkinlik");
+  const toplam = k.kizSayisi + k.erkekSayisi;
+  if (toplam === 0) uyarilar.push("Öğrenci sayısı 0");
+  else if (toplam > 200) uyarilar.push(`Öğrenci sayısı çok yüksek (${toplam})`);
+  if (/https?:\/\/|www\./i.test(k.aciklama)) uyarilar.push("Açıklamada bağlantı var");
+  return uyarilar;
+}
+
 function ozetiYenile() {
   const ss = SpreadsheetApp.getActive();
   const sayfa = ss.getSheetByName(OZET_SAYFASI) || ss.insertSheet(OZET_SAYFASI);
@@ -323,6 +364,14 @@ function ozetiYenile() {
   satirlar.push(["Form bağlantısı (öğretmenlere gönderin)", props.getProperty("FORM_ADRESI") || ""]);
   satirlar.push(["Site", AYARLAR.siteAdresi]);
   satirlar.push(["Onay bekleyen kayıt", bekleyen]);
+
+  bolum("Kontrol edilecekler (onaysızlar dahil) — onaydan önce bakın");
+  const bugun = Utilities.formatDate(new Date(), ss.getSpreadsheetTimeZone(), "yyyy-MM-dd");
+  const kontrolSatirlari = tumu
+    .map((k) => ({ k, uyarilar: kayitUyarilari(k, bugun) }))
+    .filter((x) => x.uyarilar.length)
+    .map(({ k, uyarilar }) => [k.satirNo, k.onay ? "Onaylı" : "Bekliyor", k.ilce, k.okulAdi, k.etkinlikAdi, uyarilar.join(" · ")]);
+  tablo(["Yanıtlar satırı", "Durum", "İlçe", "Okul", "Etkinlik", "Uyarı"], kontrolSatirlari);
 
   bolum("İl geneli (yalnızca onaylı kayıtlar)");
   satirlar.push([onayli.length ? ozetCumlesi(istatistik(onayli)) : "Henüz onaylı kayıt yok."]);
