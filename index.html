@@ -6,7 +6,7 @@
   <meta http-equiv="Content-Security-Policy" content="
     default-src 'none';
     script-src 'self' https://cdn.jsdelivr.net;
-    style-src 'self' https://cdn.jsdelivr.net 'unsafe-inline';
+    style-src 'self' https://cdn.jsdelivr.net;
     img-src 'self' data: https://cdn.jsdelivr.net;
     connect-src 'self' https://script.google.com https://script.googleusercontent.com;
     frame-src https://docs.google.com;
@@ -14,7 +14,13 @@
     form-action 'none';
     object-src 'none'">
   <meta name="referrer" content="strict-origin-when-cross-origin">
-  <title>STEM Etkinlik Haritası</title>
+  <!-- Arama motorları ve paylaşım önizlemeleri JS çalıştırmaz; bu üç satır
+       ile özgü olduğu için başka ilde elle değiştirilir (bkz. KURULUM.md). -->
+  <title>Erzurum STEM Etkinlik Haritası 2026-2027</title>
+  <meta name="description" content="Erzurum'da öğretmenlerin düzenlediği STEM etkinliklerini gösteren harita. İşaretçi konumları temsilîdir.">
+  <meta property="og:title" content="Erzurum STEM Etkinlik Haritası 2026-2027">
+  <meta property="og:description" content="Erzurum'da öğretmenlerin düzenlediği STEM etkinliklerini gösteren harita.">
+  <meta property="og:type" content="website">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 42'%3E%3Cpath d='M15 1C7.3 1 1 7.2 1 14.9c0 10.4 12.2 24.9 13.3 26.2a.9.9 0 0 0 1.4 0C16.8 39.8 29 25.3 29 14.9 29 7.2 22.7 1 15 1z' fill='%231f3b63'/%3E%3Ccircle cx='15' cy='15' r='5.5' fill='%23fff'/%3E%3C/svg%3E">
 
   <link rel="stylesheet"
@@ -56,8 +62,21 @@
     <p>
       Harita verisi: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap katkıcıları</a>
       · İletişim: <a id="iletisim" href="#"></a>
+      · <button id="gizlilik-ac" class="metin-dugme" type="button" aria-haspopup="dialog">Gizlilik</button>
     </p>
   </footer>
+
+  <dialog id="gizlilik" class="gizlilik" aria-labelledby="gizlilik-baslik">
+    <button id="gizlilik-kapat" class="detay-kapat" type="button" aria-label="Kapat">×</button>
+    <h2 id="gizlilik-baslik">Gizlilik</h2>
+    <ul>
+      <li>Bu harita, öğretmenlerin gönüllü olarak paylaştığı STEM etkinliklerini gösterir. Kayıtlar incelendikten sonra yayımlanır.</li>
+      <li>Sitede yalnızca etkinlik adı, okul adı, ilçe, tarih, kapsam, içerik türü, sınıf düzeyi, öğrenci sayıları, açıklama ve öğretmenin kısaltılmış adı (ör. "Ayşe Y.") gösterilir. Öğrencilere ait hiçbir kişisel bilgi toplanmaz ve gösterilmez.</li>
+      <li>İşaretçi konumları temsilîdir; okulların gerçek konumunu göstermez.</li>
+      <li>Bu site çerez, analitik veya izleme aracı kullanmaz. Sayfa açıldığında tarayıcınız siteyi barındıran GitHub'a, harita kütüphanelerini sunan jsDelivr'e ve etkinlik verisi için Google'a bağlanır. "Etkinliğini ekle" düğmesine basıldığında Google Forms yüklenir.</li>
+      <li>Bir kaydın düzeltilmesi veya yayından kaldırılması için: <a id="gizlilik-iletisim" href="#"></a></li>
+    </ul>
+  </dialog>
 
   <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"
           integrity="sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH"

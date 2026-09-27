@@ -119,6 +119,41 @@ a { color: var(--vurgu); }
 }
 .leaflet-tooltip.ilce-etiket::before { display: none; }
 
+/* Yalnızca ekran okuyucular için */
+.gorunmez {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* Metin görünümlü düğme (sayfa altı "Gizlilik") */
+.metin-dugme {
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--vurgu);
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* Gizlilik penceresi */
+.gizlilik {
+  width: min(560px, calc(100% - 32px));
+  max-height: calc(100% - 48px);
+  padding: 20px 24px;
+  border: none;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, .3);
+  color: var(--metin);
+}
+.gizlilik::backdrop { background: rgba(15, 25, 40, .5); }
+.gizlilik h2 { margin: 0 44px 12px 0; font-size: 1.2rem; }
+.gizlilik ul { margin: 0; padding-left: 20px; display: grid; gap: 8px; line-height: 1.5; }
+
 /* Sayfa altı */
 .alt {
   padding: 8px 16px 12px;

@@ -320,9 +320,19 @@ function sayfaBasliklariniKur() {
   document.title = baslik;
   document.getElementById("baslik").textContent = baslik;
 
-  const iletisim = document.getElementById("iletisim");
-  iletisim.textContent = AYARLAR.iletisim;
-  iletisim.href = `mailto:${AYARLAR.iletisim}`;
+  for (const id of ["iletisim", "gizlilik-iletisim"]) {
+    const baglanti = document.getElementById(id);
+    baglanti.textContent = AYARLAR.iletisim;
+    baglanti.href = `mailto:${AYARLAR.iletisim}`;
+  }
+}
+
+function gizlilikKur() {
+  const pencere = document.getElementById("gizlilik");
+  document.getElementById("gizlilik-ac").addEventListener("click", () => pencere.showModal());
+  document.getElementById("gizlilik-kapat").addEventListener("click", () => pencere.close());
+  // Pencerenin dışına (arka plana) tıklayınca kapansın.
+  pencere.addEventListener("click", (olay) => { if (olay.target === pencere) pencere.close(); });
 }
 
 // Altlık harita YOKTUR: yalnızca ilçeler çizilir. Böylece dışarıya istek
@@ -460,7 +470,7 @@ function kumeIkonu(adet) {
   const boyut = adet < 10 ? 34 : adet < 50 ? 40 : 46;
   return L.divIcon({
     className: "kume",
-    html: `<span>${adet}</span>`,
+    html: `<span>${adet}</span><span class="gorunmez"> etkinlik</span>`,
     iconSize: [boyut, boyut],
     tooltipAnchor: [0, -boyut / 2]
   });
@@ -519,7 +529,18 @@ function isaretcileriCiz(harita, kayitlar, ilceGeolari, detay) {
       const igne = secili || isaretci.acik;
       isaretci.setIcon(igne ? pinIkonu(kayit.icerik, secili) : kumeIkonu(1));
       isaretci.setTooltipContent(igne ? pinIpucu(kayit) : metinDugumu(kumeIpucu([kayit])));
+      etiketle();
     };
+    // Ekran okuyucular için işaretçinin ne olduğu (setIcon öğeyi yeniler).
+    const etiketle = () => {
+      const oge = isaretci.getElement();
+      if (!oge) return;
+      oge.setAttribute("role", "button");
+      oge.setAttribute("aria-label", isaretci.acik || detay.seciliId() === kayit.id
+        ? `${kayit.etkinlikAdi}, ${kayit.okulAdi}, ${kayit.ilce}. Ayrıntılar için Enter`
+        : `${kumeIpucu([kayit])}. Açmak için Enter`);
+    };
+    isaretci.on("add", etiketle);
     isaretci.bindTooltip(metinDugumu(kumeIpucu([kayit])), { direction: "top", className: "ipucu-kutu" });
     isaretci.on("click", () => {
       if (!isaretci.acik && detay.seciliId() !== kayit.id) {
@@ -730,6 +751,7 @@ function formDugmesiniKur() {
 
 async function baslat() {
   sayfaBasliklariniKur();
+  gizlilikKur();
   formDugmesiniKur();
   const harita = haritaKur();
   durumGoster("Harita yükleniyor…");
