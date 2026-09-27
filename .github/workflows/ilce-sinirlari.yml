@@ -1,0 +1,43 @@
+# GitHub'da Actions sekmesinde "İlçe sınırlarını indir" düğmesi.
+# İl adını yazıp çalıştırınca data/ilceler.geojson dosyasını OpenStreetMap'ten
+# üretir ve depoya kaydeder. Yalnızca elle çalıştırılır.
+name: İlçe sınırlarını indir
+
+on:
+  workflow_dispatch:
+    inputs:
+      il:
+        description: "İl adı (Türkçe karakterlerle, ör. Kahramanmaraş)"
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  indir:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: İlçe sınırlarını indir
+        env:
+          IL: ${{ inputs.il }}
+        run: node scripts/ilce-sinirlari.mjs "$IL"
+
+      - name: Depoya kaydet
+        env:
+          IL: ${{ inputs.il }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/ilceler.geojson
+          if git diff --cached --quiet; then
+            echo "Dosya değişmedi, kaydedilecek bir şey yok."
+          else
+            git commit -m "İlçe sınırları: $IL (OpenStreetMap)"
+            git push
+          fi
