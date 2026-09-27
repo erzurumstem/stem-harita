@@ -11,9 +11,10 @@ const AYARLAR = {
   testVeriUrl: "data/ornek-etkinlikler.json"
 };
 
-// Bilgisayarda (localhost) açılınca uydurma test verisi yüklenir;
-// canlı sitede test verisi asla gösterilmez.
-const YEREL_MI = ["localhost", "127.0.0.1"].includes(location.hostname);
+// Bilgisayarda (localhost) veya ev ağından (telefonla deneme) açılınca
+// uydurma test verisi yüklenir; canlı sitede test verisi asla gösterilmez.
+const YEREL_MI = /^(localhost|127\.0\.0\.1|10\.\d+\.\d+\.\d+|192\.168\.\d+\.\d+|172\.(1[6-9]|2\d|3[01])\.\d+\.\d+)$/
+  .test(location.hostname);
 
 // Veride yalnızca kod bulunur, ekranda yalnızca etiket gösterilir.
 const SOZLUK = {
@@ -274,6 +275,13 @@ function kayitlariDogrula(hamKayitlar, ilceAdlari, bilinenOkullar) {
     const kizSayisi = sayi(ham.kizSayisi);
     const erkekSayisi = sayi(ham.erkekSayisi);
 
+    // Tekrarsız sayım anahtarları. Numaralar Apps Script'te üretilir; tam ad
+    // ve şube siteye hiç gelmez.
+    const ogretmenNo = metin(ham.ogretmenNo);
+    const grupNo = metin(ham.grupNo);
+    if (!ogretmenNo) uyar("öğretmen numarası yok; öğretmen okul + görünen adla sayıldı.");
+    if (!grupNo) uyar("grup numarası yok; öğrencileri ayrı bir grup olarak sayıldı.");
+
     sonuc.push({
       id,
       okulAdi,
@@ -288,10 +296,61 @@ function kayitlariDogrula(hamKayitlar, ilceAdlari, bilinenOkullar) {
       erkekSayisi,
       toplamOgrenci: kizSayisi + erkekSayisi,
       aciklama: aciklamaKirp(ham.aciklama),
-      ogretmenAdi: metin(ham.ogretmenAdi)
+      ogretmenAdi: metin(ham.ogretmenAdi),
+      ogretmenAnahtari: ogretmenNo ? `o${ogretmenNo}` : `${anahtar}|${metin(ham.ogretmenAdi) || id}`,
+      grupAnahtari: grupNo ? `g${grupNo}` : `k${id}`
     });
   }
   return sonuc;
+}
+
+// ---------------------------------------------------------------------------
+// Özet: tekrarsız sayımlar (CLAUDE.md "Hesaplanan alanlar").
+
+function ozetHesapla(kayitlar) {
+  const okullar = new Set();
+  const ogretmenler = new Set();
+  const gruplar = new Map();
+  for (const k of kayitlar) {
+    okullar.add(k.okulAnahtari);
+    ogretmenler.add(k.ogretmenAnahtari);
+    // Aynı öğrenci grubu kaç etkinliğe katılırsa katılsın bir kez sayılır;
+    // kız ve erkek için o gruptaki en yüksek sayı alınır.
+    const g = gruplar.get(k.grupAnahtari) || { kiz: 0, erkek: 0 };
+    g.kiz = Math.max(g.kiz, k.kizSayisi);
+    g.erkek = Math.max(g.erkek, k.erkekSayisi);
+    gruplar.set(k.grupAnahtari, g);
+  }
+  let kiz = 0, erkek = 0;
+  for (const g of gruplar.values()) { kiz += g.kiz; erkek += g.erkek; }
+  return {
+    etkinlik: kayitlar.length,
+    okul: okullar.size,
+    ogretmen: ogretmenler.size,
+    kiz,
+    erkek,
+    ogrenci: kiz + erkek
+  };
+}
+
+function ozetGoster(kayitlar) {
+  const kutu = document.getElementById("ozet");
+  kutu.replaceChildren();
+  if (!kayitlar.length) {
+    kutu.textContent = "Henüz haritada gösterilecek etkinlik yok.";
+    return;
+  }
+  const o = ozetHesapla(kayitlar);
+  const sayiYaz = (n) => n.toLocaleString("tr-TR");
+  const kalin = (yazi) => el("strong", "", yazi);
+  kutu.append(
+    kalin(`${sayiYaz(o.etkinlik)} etkinlik`), ", ",
+    kalin(`${sayiYaz(o.okul)} okulda`), " ",
+    kalin(`${sayiYaz(o.ogretmen)} öğretmen`), " tarafından ",
+    kalin(`${sayiYaz(o.kiz)} kız`), " ve ",
+    kalin(`${sayiYaz(o.erkek)} erkek`), ", toplam ",
+    kalin(`${sayiYaz(o.ogrenci)} farklı öğrenciyle`), " gerçekleştirildi."
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -329,6 +388,11 @@ async function ilceleriYukle(harita) {
   if (!yanit.ok) throw new Error(`ilceler.geojson: HTTP ${yanit.status}`);
   const geojson = await yanit.json();
 
+  // İlçe adları işaretçilerin ALTINDA kalsın diye ayrı katmanda.
+  const adKatmani = harita.createPane("ilceAdlari");
+  adKatmani.style.zIndex = 450;
+  adKatmani.style.pointerEvents = "none";
+
   let seciliIlce = null;
   const ilceStiliniYenile = (ilce) => {
     katman.resetStyle(ilce);
@@ -353,7 +417,8 @@ async function ilceleriYukle(harita) {
         permanent: true,
         direction: "center",
         className: "ilce-etiket",
-        interactive: false
+        interactive: false,
+        pane: "ilceAdlari"
       });
       ilce.on("mouseover", () => {
         if (ilce !== seciliIlce) ilce.setStyle(ILCE_VURGU_STILI);
@@ -373,7 +438,8 @@ async function ilceleriYukle(harita) {
   harita.fitBounds(sinirlar, { padding: [12, 12] });
   // Altlık olmadığı için il dışına kaydırma ve fazla uzaklaşma sınırlanır.
   harita.setMinZoom(harita.getZoom() - 1);
-  harita.setMaxBounds(sinirlar.pad(0.3));
+  harita.ilSiniri = sinirlar.pad(0.3);
+  harita.setMaxBounds(harita.ilSiniri);
   return geojson;
 }
 
@@ -389,19 +455,278 @@ async function etkinlikleriYukle() {
   return jsonGetir(adres);
 }
 
-// 3. aşama için geçici gösterim: her okul tek bir gri nokta.
-function okulNoktalariniCiz(harita, kayitlar, ilceGeolari) {
-  const okullar = new Map();
-  for (const k of kayitlar) {
-    if (!okullar.has(k.okulAnahtari)) okullar.set(k.okulAnahtari, { ...k, adet: 0 });
-    okullar.get(k.okulAnahtari).adet++;
+// ---------------------------------------------------------------------------
+// İşaretçiler
+
+function tarihYaz(tarih) {
+  return new Date(`${tarih}T00:00:00`).toLocaleDateString("tr-TR", {
+    day: "numeric", month: "long", year: "numeric"
+  });
+}
+
+// Küçük DOM yardımcısı: metin her zaman textContent ile yazılır.
+function el(etiket, sinif, metinIcerik) {
+  const e = document.createElement(etiket);
+  if (sinif) e.className = sinif;
+  if (metinIcerik !== undefined) e.textContent = metinIcerik;
+  return e;
+}
+
+// Google Maps tarzı damla iğne. Renk yalnızca SOZLUK'tan gelir, veriden değil.
+const pinIkonlari = new Map();
+function pinIkonu(icerik, secili) {
+  const anahtar = `${icerik}|${secili ? 1 : 0}`;
+  if (!pinIkonlari.has(anahtar)) {
+    const renk = SOZLUK.icerik[icerik].renk;
+    pinIkonlari.set(anahtar, L.divIcon({
+      className: secili ? "pin pin-secili" : "pin",
+      html: `<svg viewBox="0 0 30 42" width="30" height="42" aria-hidden="true">
+        <path d="M15 1C7.3 1 1 7.2 1 14.9c0 10.4 12.2 24.9 13.3 26.2a.9.9 0 0 0 1.4 0C16.8 39.8 29 25.3 29 14.9 29 7.2 22.7 1 15 1z"
+              fill="${renk}" stroke="#fff" stroke-width="2"/>
+        <circle cx="15" cy="15" r="5.5" fill="#fff"/></svg>`,
+      iconSize: [30, 42],
+      iconAnchor: [15, 41],
+      tooltipAnchor: [0, -36]
+    }));
   }
-  for (const [anahtar, okul] of okullar) {
-    const nokta = temsiliNokta(ilceGeolari.get(okul.ilce), anahtar);
-    L.circleMarker(nokta, { radius: 6, color: "#333", weight: 1, fillColor: "#777", fillOpacity: 0.9 })
-      .bindTooltip(metinDugumu(`${okul.okulAdi} · ${okul.adet} etkinlik`))
-      .addTo(harita);
+  return pinIkonlari.get(anahtar);
+}
+
+function pinIpucu(kayit) {
+  const kutu = el("div", "ipucu");
+  kutu.append(el("strong", "", kayit.etkinlikAdi), el("span", "", `${kayit.okulAdi} · ${kayit.ilce}`));
+  return kutu;
+}
+
+// Lacivert sayı balonu: kümelerde ve tek başına duran etkinliklerde ("1").
+function kumeIkonu(adet) {
+  const boyut = adet < 10 ? 34 : adet < 50 ? 40 : 46;
+  return L.divIcon({
+    className: "kume",
+    html: `<span>${adet}</span>`,
+    iconSize: [boyut, boyut],
+    tooltipAnchor: [0, -boyut / 2]
+  });
+}
+
+function kumeIpucu(kayitlar) {
+  const okullar = new Set(kayitlar.map((k) => k.okulAnahtari));
+  return okullar.size === 1
+    ? `${kayitlar[0].okulAdi} · ${kayitlar.length} etkinlik`
+    : `${kayitlar.length} etkinlik · ${okullar.size} okul`;
+}
+
+// Her etkinlik önce sayı balonu olarak görünür; tıklanınca iğneye dönüşür,
+// iğneye tıklanınca detay paneli açılır.
+function isaretcileriCiz(harita, kayitlar, ilceGeolari, detay) {
+  const kume = L.markerClusterGroup({
+    showCoverageOnHover: false,
+    maxClusterRadius: 40,
+    spiderfyDistanceMultiplier: 1.8,
+    iconCreateFunction: (kumeKatmani) => kumeIkonu(kumeKatmani.getChildCount())
+  });
+
+  kume.on("clustermouseover", (olay) => {
+    const alt = olay.layer.getAllChildMarkers().map((m) => m.kayit);
+    olay.layer.bindTooltip(metinDugumu(kumeIpucu(alt)), { direction: "top", className: "ipucu-kutu" }).openTooltip();
+  });
+  kume.on("clustermouseout", (olay) => olay.layer.unbindTooltip());
+
+  // Yelpaze gibi açılan kümenin etkinlikleri doğrudan iğne olarak görünür.
+  kume.on("spiderfied", (olay) => olay.markers.forEach((m) => { m.acik = true; m.ikonuYenile(); }));
+  kume.on("unspiderfied", (olay) => olay.markers.forEach((m) => { m.acik = false; m.ikonuYenile(); }));
+
+  // Tek başına açılmış iğneler haritaya tıklanınca veya yakınlaştırınca
+  // yeniden sayı balonuna döner.
+  const acikTekler = new Set();
+  const tekleriKapat = () => {
+    for (const m of acikTekler) { m.acik = false; m.ikonuYenile(); }
+    acikTekler.clear();
+  };
+  harita.on("click zoomstart", tekleriKapat);
+
+  const noktalar = new Map();
+  for (const kayit of kayitlar) {
+    if (!noktalar.has(kayit.okulAnahtari)) {
+      noktalar.set(kayit.okulAnahtari, temsiliNokta(ilceGeolari.get(kayit.ilce), kayit.okulAnahtari));
+    }
+    const isaretci = L.marker(noktalar.get(kayit.okulAnahtari), {
+      icon: kumeIkonu(1),
+      riseOnHover: true,
+      keyboard: true
+    });
+    isaretci.kayit = kayit;
+    isaretci.acik = false;
+    isaretci.ikonuYenile = () => {
+      const secili = detay.seciliId() === kayit.id;
+      const igne = secili || isaretci.acik;
+      isaretci.setIcon(igne ? pinIkonu(kayit.icerik, secili) : kumeIkonu(1));
+      isaretci.setTooltipContent(igne ? pinIpucu(kayit) : metinDugumu(kumeIpucu([kayit])));
+    };
+    isaretci.bindTooltip(metinDugumu(kumeIpucu([kayit])), { direction: "top", className: "ipucu-kutu" });
+    isaretci.on("click", () => {
+      if (!isaretci.acik && detay.seciliId() !== kayit.id) {
+        isaretci.acik = true;
+        acikTekler.add(isaretci);
+        isaretci.ikonuYenile();
+      } else {
+        detay.ac(kayit);
+      }
+    });
+    detay.isaretciler.set(kayit.id, isaretci);
+    kume.addLayer(isaretci);
   }
+  harita.addLayer(kume);
+  return kume;
+}
+
+// ---------------------------------------------------------------------------
+// Detay paneli: masaüstünde sağdan, telefonda alttan açılır.
+
+function detayPaneliKur(harita, tumKayitlar) {
+  const panel = document.getElementById("detay");
+  const icerik = document.getElementById("detay-icerik");
+  const kapatDugmesi = document.getElementById("detay-kapat");
+  const genisEkran = window.matchMedia("(min-width: 768px)");
+  const isaretciler = new Map();
+  let secili = null;
+
+  function isaretciVurgula(kayit) {
+    const onceki = secili;
+    secili = kayit;
+    if (onceki) isaretciler.get(onceki.id)?.ikonuYenile();
+    if (kayit) isaretciler.get(kayit.id)?.ikonuYenile();
+  }
+
+  function bilgiSatiri(liste, baslik, deger) {
+    const satir = el("div", "bilgi");
+    satir.append(el("dt", "", baslik), el("dd", "", deger));
+    liste.append(satir);
+  }
+
+  function doldur(kayit) {
+    icerik.replaceChildren();
+    const tur = SOZLUK.icerik[kayit.icerik];
+
+    const rozet = el("span", "rozet");
+    const renk = el("span", "rozet-renk");
+    renk.style.backgroundColor = tur.renk;
+    rozet.append(renk, document.createTextNode(tur.etiket));
+
+    const baslik = el("h2", "detay-baslik", kayit.etkinlikAdi);
+    baslik.id = "detay-baslik";
+    const okul = el("p", "detay-okul", `${kayit.okulAdi} · ${kayit.ilce}`);
+
+    const bilgiler = el("dl", "bilgiler");
+    bilgiSatiri(bilgiler, "Tarih", tarihYaz(kayit.tarih));
+    bilgiSatiri(bilgiler, "Kapsam", SOZLUK.kapsam[kayit.kapsam]);
+    bilgiSatiri(bilgiler, "Sınıf düzeyi", kayit.sinifDuzeyi ? SOZLUK.sinifDuzeyi[kayit.sinifDuzeyi] : "—");
+    if (kayit.ogretmenAdi) bilgiSatiri(bilgiler, "Öğretmen", kayit.ogretmenAdi);
+
+    const ogrenci = el("div", "ogrenci");
+    const sayi = el("p", "ogrenci-toplam");
+    sayi.append(el("strong", "", String(kayit.toplamOgrenci)), document.createTextNode(" öğrenci katıldı"));
+    ogrenci.append(sayi);
+    if (kayit.toplamOgrenci > 0) {
+      const cubuk = el("div", "ogrenci-cubuk");
+      const kiz = el("span", "cubuk-kiz");
+      kiz.style.width = `${(kayit.kizSayisi / kayit.toplamOgrenci) * 100}%`;
+      cubuk.append(kiz, el("span", "cubuk-erkek"));
+      cubuk.setAttribute("aria-hidden", "true");
+      ogrenci.append(cubuk);
+    }
+    const dagilim = el("p", "ogrenci-dagilim");
+    dagilim.append(el("span", "nokta-kiz"), document.createTextNode(` ${kayit.kizSayisi} kız   `),
+                   el("span", "nokta-erkek"), document.createTextNode(` ${kayit.erkekSayisi} erkek`));
+    ogrenci.append(dagilim);
+
+    icerik.append(rozet, baslik, okul, bilgiler, ogrenci);
+
+    if (kayit.aciklama) {
+      icerik.append(el("h3", "", "Açıklama"), el("p", "detay-aciklama", kayit.aciklama));
+    }
+
+    const digerleri = tumKayitlar
+      .filter((k) => k.okulAnahtari === kayit.okulAnahtari && k.id !== kayit.id)
+      .sort((a, b) => a.tarih.localeCompare(b.tarih));
+    if (digerleri.length) {
+      icerik.append(el("h3", "", "Bu okulun diğer etkinlikleri"));
+      const liste = el("ul", "diger-liste");
+      for (const k of digerleri) {
+        const dugme = el("button", "diger-dugme");
+        dugme.type = "button";
+        const renkNoktasi = el("span", "rozet-renk");
+        renkNoktasi.style.backgroundColor = SOZLUK.icerik[k.icerik].renk;
+        dugme.append(renkNoktasi, el("span", "diger-ad", k.etkinlikAdi), el("span", "diger-tarih", tarihYaz(k.tarih)));
+        dugme.addEventListener("click", () => ac(k));
+        const oge = el("li");
+        oge.append(dugme);
+        liste.append(oge);
+      }
+      icerik.append(liste);
+    }
+  }
+
+  function ac(kayit) {
+    doldur(kayit);
+    panel.setAttribute("aria-labelledby", "detay-baslik");
+    panel.classList.add("acik");
+    panel.setAttribute("aria-hidden", "false");
+    panel.scrollTop = 0;
+    isaretciVurgula(kayit);
+    kapatDugmesi.focus({ preventScroll: true });
+
+    // İşaretçi panelin altında kalmasın. Panel açıkken kaydırma sınırı
+    // kaldırılır; yoksa il kenarındaki işaretçi panelin arkasında kalır.
+    const isaretci = isaretciler.get(kayit.id);
+    isaretci?.closeTooltip();
+    if (isaretci && harita.hasLayer(isaretci)) {
+      harita.setMaxBounds(null);
+      const bosluk = genisEkran.matches
+        ? { paddingTopLeft: [40, 60], paddingBottomRight: [panel.offsetWidth + 40, 40] }
+        : { paddingTopLeft: [30, 60], paddingBottomRight: [30, panel.offsetHeight + 30] };
+      harita.panInside(isaretci.getLatLng(), bosluk);
+    }
+  }
+
+  function kapat() {
+    if (!panel.classList.contains("acik")) return;
+    panel.classList.remove("acik");
+    panel.setAttribute("aria-hidden", "true");
+    isaretciVurgula(null);
+    harita.setMaxBounds(harita.ilSiniri);
+  }
+
+  kapatDugmesi.addEventListener("click", kapat);
+  document.addEventListener("keydown", (olay) => { if (olay.key === "Escape") kapat(); });
+  harita.on("click", kapat);
+
+  return { ac, kapat, isaretciler, seciliId: () => secili?.id };
+}
+
+// ---------------------------------------------------------------------------
+// Lejant: içerik türlerinin renkleri.
+
+function lejantEkle(harita) {
+  const lejant = L.control({ position: "topright" });
+  lejant.onAdd = () => {
+    const kutu = el("details", "lejant");
+    if (window.matchMedia("(min-width: 768px)").matches) kutu.open = true;
+    kutu.append(el("summary", "", "Etkinlik türleri"));
+    const liste = el("ul");
+    for (const tur of Object.values(SOZLUK.icerik)) {
+      const oge = el("li");
+      const renk = el("span", "rozet-renk");
+      renk.style.backgroundColor = tur.renk;
+      oge.append(renk, document.createTextNode(tur.etiket));
+      liste.append(oge);
+    }
+    kutu.append(liste);
+    L.DomEvent.disableClickPropagation(kutu);
+    L.DomEvent.disableScrollPropagation(kutu);
+    return kutu;
+  };
+  lejant.addTo(harita);
 }
 
 async function baslat() {
@@ -418,17 +743,21 @@ async function baslat() {
     return;
   }
   const ilceGeolari = new Map(ilceler.features.map((f) => [f.properties.ad, ilceGeometrisiHazirla(f)]));
+  lejantEkle(harita);
 
   durumGoster("Etkinlikler yükleniyor…");
   try {
     const [okulListesi, hamKayitlar] = await Promise.all([jsonGetir("data/okullar.json"), etkinlikleriYukle()]);
     const bilinenOkullar = new Set(okulListesi.map((o) => okulAnahtari(metin(o.okulAdi), metin(o.ilce))));
     const kayitlar = kayitlariDogrula(hamKayitlar, new Set(ilceGeolari.keys()), bilinenOkullar);
-    okulNoktalariniCiz(harita, kayitlar, ilceGeolari);
+    ozetGoster(kayitlar);
+    const detay = detayPaneliKur(harita, kayitlar);
+    isaretcileriCiz(harita, kayitlar, ilceGeolari, detay);
     if (YEREL_MI) durumGoster(`Yerel test: uydurma veri gösteriliyor (${kayitlar.length} etkinlik).`);
     else durumGizle();
   } catch (hata) {
     console.error(hata);
+    document.getElementById("ozet").textContent = "";
     durumGoster("Etkinlik verileri şu an yüklenemedi. Lütfen sayfayı daha sonra yenileyin.", true);
   }
 }

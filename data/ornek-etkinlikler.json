@@ -12,7 +12,9 @@
     "erkekSayisi": 7,
     "aciklama": "Uydurma test kaydıdır. Öğrencilerle birlikte yapılan örnek bir atölye çalışması.",
     "ogretmenAdi": "Elif T.",
-    "onay": true
+    "onay": true,
+    "ogretmenNo": 1,
+    "grupNo": 1
   },
   {
     "id": "2026-1760086400000",
@@ -27,7 +29,9 @@
     "erkekSayisi": 10,
     "aciklama": "Uydurma test kaydıdır. Öğrencilerle birlikte yapılan örnek bir atölye çalışması.",
     "ogretmenAdi": "Mehmet K.",
-    "onay": true
+    "onay": true,
+    "ogretmenNo": 2,
+    "grupNo": 2
   },
   {
     "id": "2026-1760172800000",
@@ -42,7 +46,9 @@
     "erkekSayisi": 13,
     "aciklama": "Uydurma test kaydıdır. Öğrencilerle birlikte yapılan örnek bir atölye çalışması.",
     "ogretmenAdi": "Zeynep A.",
-    "onay": true
+    "onay": true,
+    "ogretmenNo": 3,
+    "grupNo": 1
   },
   {
     "id": "2026-1760259200000",
@@ -57,7 +63,9 @@
     "erkekSayisi": 16,
     "aciklama": "Uydurma test kaydıdır. Öğrencilerle birlikte yapılan örnek bir atölye çalışması.",
     "ogretmenAdi": "Ahmet Y.",
-    "onay": true
+    "onay": true,
+    "ogretmenNo": 4,
+    "grupNo": 2
   },
   {
     "id": "2026-1760345600000",
@@ -72,7 +80,9 @@
     "erkekSayisi": 9,
     "aciklama": "Uydurma test kaydıdır. Öğrencilerle birlikte yapılan örnek bir atölye çalışması.",
     "ogretmenAdi": "Ayşe Nur D.",
-    "onay": true
+    "onay": true,
+    "ogretmenNo": 5,
+    "grupNo": 3
   },
   {
     "id": "2026-1760432000000",
@@ -87,7 +97,9 @@
     "erkekSayisi": 12,
     "aciklama": "Uydurma test kaydıdır. Öğrencilerle birlikte yapılan örnek bir atölye çalışması.",
     "ogretmenAdi": "Emre S.",
-    "onay": true
+    "onay": true,
+    "ogretmenNo": 6,
+    "grupNo": 4
   },
   {
     "id": "2026-1760518400000",
@@ -102,7 +114,9 @@
     "erkekSayisi": 15,
     "aciklama": "Uydurma test kaydıdır. Öğrencilerle birlikte yapılan örnek bir atölye çalışması.",
     "ogretmenAdi": "İpek Ö.",
-    "onay": true
+    "onay": true,
+    "ogretmenNo": 7,
+    "grupNo": 5
   },
   {
     "id": "2026-1760604800000",
@@ -117,7 +131,9 @@
     "erkekSayisi": 8,
     "aciklama": "Uydurma test kaydıdır. Öğrencilerle birlikte yapılan örnek bir atölye çalışması.",
     "ogretmenAdi": "",
-    "onay": true
+    "onay": true,
+    "ogretmenNo": 8,
+    "grupNo": 6
   },
   {
     "id": "2026-1760691200000",
@@ -132,7 +148,9 @@
     "erkekSayisi": 11,
     "aciklama": "Uydurma test kaydıdır. Öğrencilerle birlikte yapılan örnek bir atölye çalışması.",
     "ogretmenAdi": "Elif T.",
-    "onay": true
+    "onay": true,
+    "ogretmenNo": 9,
+    "grupNo": 5
   },
   {
     "id": "2026-1760777600000",
@@ -147,7 +165,9 @@
     "erkekSayisi": 14,
     "aciklama": "Uydurma test kaydıdır. Öğrencilerle birlikte yapılan örnek bir atölye çalışması.",
     "ogretmenAdi": "Mehmet K.",
-    "onay": true
+    "onay": true,
+    "ogretmenNo": 10,
+    "grupNo": 7
   },
   {
     "id": "2026-1760864000000",
@@ -162,7 +182,9 @@
     "erkekSayisi": 7,
     "aciklama": "Uydurma test kaydıdır. Öğrencilerle birlikte yapılan örnek bir atölye çalışması.",
     "ogretmenAdi": "Zeynep A.",
-    "onay": true
+    "onay": true,
+    "ogretmenNo": 11,
+    "grupNo": 8
   },
   {
     "id": "2026-1760950400000",
@@ -177,7 +199,9 @@
     "erkekSayisi": 10,
     "aciklama": "Uydurma test kaydıdır. Öğrencilerle birlikte yapılan örnek bir atölye çalışması.",
     "ogretmenAdi": "Ahmet Y.",
-    "onay": true
+    "onay": true,
+    "ogretmenNo": 12,
+    "grupNo": 9
   },
   {
     "id": "2026-1761036800000",
@@ -192,7 +216,9 @@
     "erkekSayisi": 13,
     "aciklama": "Uydurma test kaydıdır. Öğrencilerle birlikte yapılan örnek bir atölye çalışması.",
     "ogretmenAdi": "Ayşe Nur D.",
-    "onay": true
+    "onay": true,
+    "ogretmenNo": 13,
+    "grupNo": 10
   },
   {
     "id": "2026-1761123200000",
@@ -207,7 +233,9 @@
     "erkekSayisi": 16,
     "aciklama": "Uydurma test kaydıdır. Öğrencilerle birlikte yapılan örnek bir atölye çalışması.",
     "ogretmenAdi": "Emre S.",
-    "onay": true
+    "onay": true,
+    "ogretmenNo": 14,
+    "grupNo": 11
   },
   {
     "id": "2026-1761209600000",
@@ -222,7 +250,9 @@
     "erkekSayisi": 9,
     "aciklama": "Uydurma test kaydıdır. Öğrencilerle birlikte yapılan örnek bir atölye çalışması.",
     "ogretmenAdi": "İpek Ö.",
-    "onay": true
+    "onay": true,
+    "ogretmenNo": 15,
+    "grupNo": 12
   },
   {
     "id": "2026-1761296000000",
@@ -237,7 +267,9 @@
     "erkekSayisi": 12,
     "aciklama": "Uydurma test kaydıdır. Öğrencilerle birlikte yapılan örnek bir atölye çalışması.",
     "ogretmenAdi": "",
-    "onay": true
+    "onay": true,
+    "ogretmenNo": 16,
+    "grupNo": 13
   },
   {
     "id": "2026-1761382400000",
@@ -252,7 +284,9 @@
     "erkekSayisi": 15,
     "aciklama": "Uydurma test kaydıdır. Öğrencilerle birlikte yapılan örnek bir atölye çalışması.",
     "ogretmenAdi": "Elif T.",
-    "onay": true
+    "onay": true,
+    "ogretmenNo": 17,
+    "grupNo": 14
   },
   {
     "id": "2026-1761468800000",
@@ -267,7 +301,9 @@
     "erkekSayisi": 8,
     "aciklama": "Uydurma test kaydıdır. Öğrencilerle birlikte yapılan örnek bir atölye çalışması.",
     "ogretmenAdi": "Mehmet K.",
-    "onay": true
+    "onay": true,
+    "ogretmenNo": 18,
+    "grupNo": 15
   },
   {
     "id": "2026-1761555200000",
@@ -282,7 +318,9 @@
     "erkekSayisi": 11,
     "aciklama": "Uydurma test kaydıdır. Öğrencilerle birlikte yapılan örnek bir atölye çalışması.",
     "ogretmenAdi": "Zeynep A.",
-    "onay": true
+    "onay": true,
+    "ogretmenNo": 19,
+    "grupNo": 14
   },
   {
     "id": "2026-1761641600000",
@@ -297,7 +335,9 @@
     "erkekSayisi": 14,
     "aciklama": "Uydurma test kaydıdır. Öğrencilerle birlikte yapılan örnek bir atölye çalışması.",
     "ogretmenAdi": "Ahmet Y.",
-    "onay": true
+    "onay": true,
+    "ogretmenNo": 20,
+    "grupNo": 16
   },
   {
     "id": "2026-1761728000000",
@@ -312,7 +352,9 @@
     "erkekSayisi": 7,
     "aciklama": "Uydurma test kaydıdır. Öğrencilerle birlikte yapılan örnek bir atölye çalışması.",
     "ogretmenAdi": "Ayşe Nur D.",
-    "onay": true
+    "onay": true,
+    "ogretmenNo": 21,
+    "grupNo": 17
   },
   {
     "id": "2026-1761814400000",
@@ -327,7 +369,9 @@
     "erkekSayisi": 10,
     "aciklama": "Uydurma test kaydıdır. Öğrencilerle birlikte yapılan örnek bir atölye çalışması.",
     "ogretmenAdi": "Emre S.",
-    "onay": true
+    "onay": true,
+    "ogretmenNo": 22,
+    "grupNo": 18
   },
   {
     "id": "2026-1761900800000",
@@ -342,7 +386,9 @@
     "erkekSayisi": 13,
     "aciklama": "Uydurma test kaydıdır. Öğrencilerle birlikte yapılan örnek bir atölye çalışması.",
     "ogretmenAdi": "İpek Ö.",
-    "onay": true
+    "onay": true,
+    "ogretmenNo": 23,
+    "grupNo": 19
   },
   {
     "id": "2026-1761987200000",
@@ -357,7 +403,9 @@
     "erkekSayisi": 16,
     "aciklama": "Uydurma test kaydıdır. Öğrencilerle birlikte yapılan örnek bir atölye çalışması.",
     "ogretmenAdi": "",
-    "onay": true
+    "onay": true,
+    "ogretmenNo": 24,
+    "grupNo": 20
   },
   {
     "id": "2026-1762073600000",
@@ -372,7 +420,9 @@
     "erkekSayisi": 9,
     "aciklama": "Uydurma test kaydıdır. Öğrencilerle birlikte yapılan örnek bir atölye çalışması.",
     "ogretmenAdi": "Elif T.",
-    "onay": true
+    "onay": true,
+    "ogretmenNo": 25,
+    "grupNo": 21
   },
   {
     "id": "2026-1762160000000",
@@ -387,7 +437,9 @@
     "erkekSayisi": 12,
     "aciklama": "Uydurma test kaydıdır. Öğrencilerle birlikte yapılan örnek bir atölye çalışması.",
     "ogretmenAdi": "Mehmet K.",
-    "onay": true
+    "onay": true,
+    "ogretmenNo": 26,
+    "grupNo": 22
   },
   {
     "id": "2026-1770000000026",
@@ -402,7 +454,9 @@
     "erkekSayisi": 7,
     "aciklama": "Uydurma test kaydıdır. Öğrencilerle birlikte yapılan örnek bir atölye çalışması.",
     "ogretmenAdi": "Elif T.",
-    "onay": false
+    "onay": false,
+    "ogretmenNo": 1,
+    "grupNo": 1
   },
   {
     "id": "2026-1770000000027",
@@ -417,7 +471,9 @@
     "erkekSayisi": 7,
     "aciklama": "Uydurma test kaydıdır. Öğrencilerle birlikte yapılan örnek bir atölye çalışması.",
     "ogretmenAdi": "Elif T.",
-    "onay": true
+    "onay": true,
+    "ogretmenNo": 27,
+    "grupNo": 23
   },
   {
     "id": "2026-1770000000028",
@@ -432,7 +488,9 @@
     "erkekSayisi": 7,
     "aciklama": "Uydurma test kaydıdır. Öğrencilerle birlikte yapılan örnek bir atölye çalışması.",
     "ogretmenAdi": "Elif T.",
-    "onay": true
+    "onay": true,
+    "ogretmenNo": 1,
+    "grupNo": 2
   },
   {
     "id": "2026-1770000000029",
@@ -447,7 +505,9 @@
     "erkekSayisi": 7,
     "aciklama": "Uydurma test kaydıdır. Öğrencilerle birlikte yapılan örnek bir atölye çalışması.",
     "ogretmenAdi": "Elif T.",
-    "onay": true
+    "onay": true,
+    "ogretmenNo": 28,
+    "grupNo": 24
   },
   {
     "id": "2026-1770000000030",
@@ -462,7 +522,9 @@
     "erkekSayisi": 7,
     "aciklama": "Bu açıklama bilerek uzun yazılmıştır. Bu açıklama bilerek uzun yazılmıştır. Bu açıklama bilerek uzun yazılmıştır. Bu açıklama bilerek uzun yazılmıştır. Bu açıklama bilerek uzun yazılmıştır. Bu açıklama bilerek uzun yazılmıştır. Bu açıklama bilerek uzun yazılmıştır. Bu açıklama bilerek uzun yazılmıştır. Bu açıklama bilerek uzun yazılmıştır. Bu açıklama bilerek uzun yazılmıştır. Bu açıklama bilerek uzun yazılmıştır. Bu açıklama bilerek uzun yazılmıştır. ",
     "ogretmenAdi": "Elif T.",
-    "onay": true
+    "onay": true,
+    "ogretmenNo": 1,
+    "grupNo": 1
   },
   {
     "id": "2026-1770000000031",
@@ -477,7 +539,9 @@
     "erkekSayisi": 7,
     "aciklama": "Uydurma test kaydıdır. Öğrencilerle birlikte yapılan örnek bir atölye çalışması.",
     "ogretmenAdi": "Elif T.",
-    "onay": true
+    "onay": true,
+    "ogretmenNo": 1,
+    "grupNo": 2
   },
   {
     "id": "2026-1770000000032",
@@ -492,7 +556,9 @@
     "erkekSayisi": 7,
     "aciklama": "Uydurma test kaydıdır. Öğrencilerle birlikte yapılan örnek bir atölye çalışması.",
     "ogretmenAdi": "Elif T.",
-    "onay": true
+    "onay": true,
+    "ogretmenNo": 1,
+    "grupNo": 1
   },
   {
     "id": "2026-1779999999999",
@@ -506,7 +572,8 @@
     "erkekSayisi": "on",
     "aciklama": "Uydurma test kaydıdır. Öğrencilerle birlikte yapılan örnek bir atölye çalışması.",
     "ogretmenAdi": "Elif T.",
-    "onay": true
+    "onay": true,
+    "ogretmenNo": 1
   },
   {
     "id": "2026-1770000000033",
@@ -521,7 +588,9 @@
     "erkekSayisi": 7,
     "aciklama": "Uydurma test kaydıdır. Öğrencilerle birlikte yapılan örnek bir atölye çalışması.",
     "ogretmenAdi": "Elif T.",
-    "onay": true
+    "onay": true,
+    "ogretmenNo": 1,
+    "grupNo": 1
   },
   {
     "id": "2026-1770000000034",
@@ -536,6 +605,8 @@
     "erkekSayisi": 7,
     "aciklama": "Uydurma test kaydıdır. Öğrencilerle birlikte yapılan örnek bir atölye çalışması.",
     "ogretmenAdi": "Elif T.",
-    "onay": true
+    "onay": true,
+    "ogretmenNo": 29,
+    "grupNo": 8
   }
 ]

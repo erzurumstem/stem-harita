@@ -14,10 +14,15 @@
     object-src 'none'">
   <meta name="referrer" content="strict-origin-when-cross-origin">
   <title>STEM Etkinlik Haritası</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 42'%3E%3Cpath d='M15 1C7.3 1 1 7.2 1 14.9c0 10.4 12.2 24.9 13.3 26.2a.9.9 0 0 0 1.4 0C16.8 39.8 29 25.3 29 14.9 29 7.2 22.7 1 15 1z' fill='%231f3b63'/%3E%3Ccircle cx='15' cy='15' r='5.5' fill='%23fff'/%3E%3C/svg%3E">
 
   <link rel="stylesheet"
         href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css"
         integrity="sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H"
+        crossorigin="anonymous">
+  <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/leaflet.markercluster@1.5.3/dist/MarkerCluster.css"
+        integrity="sha384-pmjIAcz2bAn0xukfxADbZIb3t8oRT9Sv0rvO+BR5Csr6Dhqq+nZs59P0pPKQJkEV"
         crossorigin="anonymous">
   <link rel="stylesheet" href="css/stil.css">
 </head>
@@ -26,9 +31,15 @@
     <h1 id="baslik">STEM Etkinlik Haritası</h1>
   </header>
 
+  <p id="ozet" class="ozet" aria-live="polite">Etkinlikler yükleniyor…</p>
+
   <main class="icerik">
     <div id="harita" class="harita" role="region" aria-label="Etkinlik haritası"></div>
     <p id="durum" class="durum" role="status" hidden></p>
+    <aside id="detay" class="detay" aria-label="Etkinlik ayrıntıları" aria-hidden="true">
+      <button id="detay-kapat" class="detay-kapat" type="button" aria-label="Kapat">×</button>
+      <div id="detay-icerik" class="detay-icerik"></div>
+    </aside>
   </main>
 
   <footer class="alt">
@@ -41,6 +52,9 @@
 
   <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"
           integrity="sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH"
+          crossorigin="anonymous" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"
+          integrity="sha384-eXVCORTRlv4FUUgS/xmOyr66XBVraen8ATNLMESp92FKXLAMiKkerixTiBvXriZr"
           crossorigin="anonymous" defer></script>
   <script src="js/harita.js" defer></script>
 </body>
