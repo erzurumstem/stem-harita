@@ -4,7 +4,8 @@ const AYARLAR = {
   il: "İl adı",
   donem: "2026-2027",
   idOnEki: "2026",
-  veriSorumlusu: "Ad Soyad (proje yürütücüsü)",
+  // KVKK m.10: aydınlatmada veri sorumlusunun KİMLİĞİ yazılmalıdır.
+  veriSorumlusu: "Ad Soyad (proje yürütücüsü) — iletisim@ornek.com",
   iletisim: "iletisim@ornek.com",
   siteAdresi: "https://kullaniciadi.github.io/stem-harita/",
   saklamaTarihi: "31 Ağustos 2027",

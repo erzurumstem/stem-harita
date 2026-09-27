@@ -21,12 +21,12 @@ const SORU = {
   ilce: "İlçe",
   okul: "Okul adı",
   ad: "Adınız ve soyadınız",
-  izin: "Ad yayım izni",
   etkinlik: "Etkinlik adı",
   kapsam: "Etkinlik hangi program kapsamında yapıldı?",
   icerik: "Etkinlikte ne yapıldı?",
   sinif: "Sınıf",
   sube: "Şube",
+  sube1112: "Şube (11. ve 12. sınıf)",
   tarih: "Etkinlik tarihi",
   kiz: "Katılan kız öğrenci sayısı",
   erkek: "Katılan erkek öğrenci sayısı",
@@ -70,9 +70,14 @@ const SINIFLAR = ["Anasınıfı"]
   .concat(Array.from({ length: 12 }, (_, i) => `${i + 1}. sınıf`))
   .concat(["Kulüp / karma grup"]);
 const KULUP = "Kulüp / karma grup";
-const SUBE_YOK = "Yok (kulüp / karma grup)";
-const SUBELER = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "İ", "J", "K", "L",
-  "M", "N", "O", "P", "R", "S", "T", "U", "V", "Y", "Z", SUBE_YOK];
+const HARFLER = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "İ", "J", "K", "L",
+  "M", "N", "O", "P", "R", "S", "T", "U", "V", "Y", "Z"];
+const SUBELER = HARFLER;
+// 11. ve 12. sınıflarda alan ayrımı: "Sayısal A", "Eşit Ağırlık B" … Alan
+// ayrımı olmayan okullar için yalnızca harf seçenekleri de başta bulunur.
+const ALANLAR = ["Sayısal", "Eşit Ağırlık", "Sözel", "Dil"];
+const SUBELER_1112 = HARFLER.slice(0, 8)
+  .concat(...ALANLAR.map((alan) => HARFLER.slice(0, 6).map((h) => `${alan} ${h}`)));
 
 // ---------------------------------------------------------------------------
 // Metin yardımcıları. Türkçe harf dönüşümü elle yapılır; Apps Script'in yerel
@@ -170,7 +175,7 @@ function kayitOlustur(satir, saatDilimi) {
   const kapsamKodu = tersSozluk(KAPSAM)[temizle(satir[SORU.kapsam])] || "diger";
   const icerikKodu = tersSozluk(ICERIK)[temizle(satir[SORU.icerik])] || "diger";
   const sinif = temizle(satir[SORU.sinif]);
-  const sube = temizle(satir[SORU.sube]);
+  const sube = temizle(satir[SORU.sube]) || temizle(satir[SORU.sube1112]);
   const okulAdi = temizle(satir[SORU.okul]);
   const ilce = temizle(satir[SORU.ilce]);
   const tamAd = temizle(satir[SORU.ad]);
@@ -181,7 +186,7 @@ function kayitOlustur(satir, saatDilimi) {
 
   const okulAnahtari = `${sadelestir(okulAdi)}|${ilce}`;
   const ogretmenAnahtari = `${okulAnahtari}|${sadelestir(tamAd)}`;
-  const kulupMu = sinif === KULUP || sube === SUBE_YOK;
+  const kulupMu = sinif === KULUP;
   const grupAnahtari = kulupMu
     ? `${okulAnahtari}|kulüp|${sadelestir(tamAd)}`
     : `${okulAnahtari}|${sinif}|${sube}`;
@@ -199,7 +204,7 @@ function kayitOlustur(satir, saatDilimi) {
     kizSayisi: sayiyaCevir(satir[SORU.kiz]),
     erkekSayisi: sayiyaCevir(satir[SORU.erkek]),
     aciklama: temizle(satir[SORU.aciklama]),
-    ogretmenAdi: temizle(satir[SORU.izin]) ? adiKisalt(tamAd) : "",
+    ogretmenAdi: adiKisalt(tamAd),
     // Yalnızca Özet sayfası için:
     okulAnahtari,
     ogretmenAnahtari,
@@ -412,17 +417,17 @@ function onOpen() {
 
 function aydinlatmaMetni() {
   return [
-    `Veri sorumlusu: ${AYARLAR.veriSorumlusu} — ${AYARLAR.iletisim}`,
+    `Veri sorumlusu: ${AYARLAR.veriSorumlusu}`,
     "",
-    `Bu form, ${AYARLAR.il} ilinde öğretmenlerin düzenlediği STEM etkinliklerini gönüllülük esasıyla bir harita üzerinde tanıtmak amacıyla hazırlanmıştır. Proje kişisel bir girişimdir; herhangi bir kurumun resmî çalışması değildir.`,
+    `Bu form, ${AYARLAR.il} ilinde öğretmenlerin düzenlediği STEM etkinliklerini gönüllülük esasıyla bir harita üzerinde tanıtmak amacıyla hazırlanmıştır.`,
     "",
     "İşlenen veriler: Adınız ve soyadınız; okulunuzun adı ve ilçesi; etkinlik bilgileri (ad, tarih, kapsam, içerik, sınıf ve şube, katılan kız ve erkek öğrenci sayısı, açıklama). Öğrencilere ait ad, fotoğraf veya kimliği belirleyici hiçbir bilgi toplanmaz. E-posta adresiniz toplanmaz.",
     "",
-    `Yayımlanan bilgiler: Kaydınız incelenip onaylandıktan sonra şu bilgiler ${AYARLAR.siteAdresi} adresinde herkese açık olarak yayımlanır: etkinlik adı, okul adı, ilçe, tarih, kapsam, içerik, sınıf düzeyi, öğrenci sayıları ve açıklama. Adınız yalnızca izin verirseniz ve kısaltılmış biçimde (ör. "Ayşe Y.") yayımlanır. Soyadınızın tamamı ve şube bilgisi yayımlanmaz. Haritadaki konumlar temsilîdir; okulun gerçek konumunu göstermez.`,
+    `Yayımlanan bilgiler: Kaydınız incelenip onaylandıktan sonra şu bilgiler ${AYARLAR.siteAdresi} adresinde herkese açık olarak yayımlanır: etkinlik adı, okul adı, ilçe, tarih, kapsam, içerik, sınıf düzeyi, öğrenci sayıları ve açıklama. Adınız yalnızca kısaltılmış biçimde (ör. "Ayşe Y.") yayımlanır. Soyadınızın tamamı ile sınıf ve şube bilgisi yayımlanmaz. Haritadaki konumlar temsilîdir; okulun gerçek konumunu göstermez.`,
     "",
     "Amaç ve hukuki sebep: Etkinliklerin tanıtılması; açık rızanız (6698 sayılı KVKK m.5/1).",
     "",
-    "Aktarım ve saklama yeri: Veriler Google Forms / Google E-Tablolar hizmetlerinde saklanır; bu hizmetlerin sunucuları yurt dışında bulunabilir. Site GitHub Pages üzerinde yayımlanır. Veriler başka hiçbir kişi veya kurumla paylaşılmaz.",
+    "Saklama yeri: Veriler Google Forms / Google E-Tablolar hizmetlerinde saklanır. Site GitHub Pages üzerinde yayımlanır. Veriler başka hiçbir kişi veya kurumla paylaşılmaz.",
     "",
     `Saklama süresi: Form yanıtları ${AYARLAR.saklamaTarihi} tarihinde silinir. Sitede yayımlanmış bilgiler bu tarihten sonra arşiv olarak yayında kalabilir.`,
     "",
@@ -453,11 +458,8 @@ function formuOlustur() {
     .setHelpText("Okulunuzun tam resmî adını kısaltma kullanmadan yazınız. Örnek: Şehit Ahmet Yılmaz İlkokulu")
     .setRequired(true);
   form.addTextItem().setTitle(SORU.ad)
-    .setHelpText("Sitede adınız yalnızca aşağıdaki kutuyu işaretlerseniz ve kısaltılmış olarak görünür (ör. Ayşe Y.).")
+    .setHelpText("Sitede adınız kısaltılmış olarak görünür (ör. Ayşe Y.).")
     .setRequired(true);
-  form.addCheckboxItem().setTitle(SORU.izin)
-    .setChoiceValues(["Adımın sitede kısaltılmış olarak (ör. Ayşe Y.) yayımlanmasına izin veriyorum."])
-    .setRequired(false);
   form.addTextItem().setTitle(SORU.etkinlik).setRequired(true)
     .setValidation(FormApp.createTextValidation()
       .setHelpText("En fazla 100 karakter.")
@@ -466,10 +468,27 @@ function formuOlustur() {
     .setChoiceValues(Object.keys(KAPSAM).map((k) => KAPSAM[k])).setRequired(true);
   form.addMultipleChoiceItem().setTitle(SORU.icerik)
     .setChoiceValues(Object.keys(ICERIK).map((k) => ICERIK[k])).setRequired(true);
-  form.addListItem().setTitle(SORU.sinif).setChoiceValues(SINIFLAR).setRequired(true);
+  const sinifSorusu = form.addListItem().setTitle(SORU.sinif).setRequired(true)
+    .setHelpText("Kulüp veya farklı sınıflardan öğrencilerle yaptıysanız \"" + KULUP + "\" seçiniz.");
+
+  // Sınıfa göre dallanma: 11-12 → alanlı şube sayfası; kulüp → şube sorulmaz.
+  const subeSayfasi = form.addPageBreakItem().setTitle("Şube");
   form.addListItem().setTitle(SORU.sube)
-    .setHelpText("Etkinliği birden fazla şubeyle yaptıysanız her şube için ayrı kayıt giriniz. Kulüp veya karma grupsa \"" + SUBE_YOK + "\" seçiniz.")
+    .setHelpText("Etkinliği birden fazla şubeyle yaptıysanız her şube için ayrı kayıt giriniz.")
     .setChoiceValues(SUBELER).setRequired(true);
+  const sube1112Sayfasi = form.addPageBreakItem().setTitle("Şube (11. ve 12. sınıf)");
+  form.addListItem().setTitle(SORU.sube1112)
+    .setHelpText("Alan ayrımı olan sınıflarda alanı ve şubeyi seçiniz (ör. Sayısal A). Alan ayrımı yoksa yalnızca şube harfini seçiniz. Birden fazla şubeyle yaptıysanız her şube için ayrı kayıt giriniz.")
+    .setChoiceValues(SUBELER_1112).setRequired(true);
+  const sonSayfa = form.addPageBreakItem().setTitle("Etkinlik ayrıntıları");
+  sube1112Sayfasi.setGoToPage(sonSayfa);   // "Şube" sayfasından sonra 11-12 sayfası atlanır.
+  sinifSorusu.setChoices(SINIFLAR.map((sinif) => {
+    const hedef = sinif === KULUP ? sonSayfa
+      : (sinif === "11. sınıf" || sinif === "12. sınıf") ? sube1112Sayfasi
+      : subeSayfasi;
+    return sinifSorusu.createChoice(sinif, hedef);
+  }));
+
   form.addDateItem().setTitle(SORU.tarih).setRequired(true);
   form.addTextItem().setTitle(SORU.kiz).setRequired(true).setValidation(sayiDogrulama);
   form.addTextItem().setTitle(SORU.erkek).setRequired(true).setValidation(sayiDogrulama);
@@ -492,18 +511,13 @@ function formuOlustur() {
   return form;
 }
 
-function kurulum() {
-  const ss = SpreadsheetApp.getActive();
-  const props = PropertiesService.getScriptProperties();
-  if (props.getProperty("FORM_ID")) {
-    throw new Error("Kurulum daha önce yapılmış. Formu yeniden oluşturmak gerekiyorsa önce yöneticiye danışın.");
-  }
-
+// Formu oluşturur, bu tabloya bağlar, yanıt sayfasını "Yanıtlar" yapar ve
+// sağına Onay sütununu ekler.
+function formuKurVeBagla(ss, props) {
   const form = formuOlustur();
   form.setDestination(FormApp.DestinationType.SPREADSHEET, ss.getId());
   SpreadsheetApp.flush();
 
-  // Formun bağlandığı yeni sayfayı bul ve adlandır.
   const formId = form.getId();
   const sayfa = ss.getSheets().find((s) => {
     const adres = s.getFormUrl();
@@ -512,10 +526,27 @@ function kurulum() {
   if (!sayfa) throw new Error("Form yanıt sayfası bulunamadı.");
   sayfa.setName(YANIT_SAYFASI);
 
-  // Onay sütunu: form sütunlarının sağına.
   const onaySutunu = sayfa.getLastColumn() + 1;
   sayfa.getRange(1, onaySutunu).setValue(ONAY_SUTUNU).setFontWeight("bold").setBackground("#fff2cc");
   sayfa.setFrozenRows(1);
+
+  props.setProperty("FORM_ID", formId);
+  props.setProperty("FORM_ADRESI", form.getPublishedUrl());
+  return form;
+}
+
+function kurulumSonuMesaji(form) {
+  Logger.log("Öğretmenlere gönderilecek form adresi: " + form.getPublishedUrl());
+  Logger.log("Formu düzenleme adresi (yalnızca siz): " + form.getEditUrl());
+}
+
+function kurulum() {
+  const ss = SpreadsheetApp.getActive();
+  const props = PropertiesService.getScriptProperties();
+  if (props.getProperty("FORM_ID")) {
+    throw new Error("Kurulum daha önce yapılmış. Formu yeniden oluşturmak için formuYenidenKur() kullanın.");
+  }
+  const form = formuKurVeBagla(ss, props);
 
   // Boş varsayılan sayfayı kaldır.
   ss.getSheets().forEach((s) => {
@@ -524,12 +555,52 @@ function kurulum() {
 
   ScriptApp.newTrigger("formGonderildi").forSpreadsheet(ss).onFormSubmit().create();
   ScriptApp.newTrigger("duzenlendi").forSpreadsheet(ss).onEdit().create();
-
-  props.setProperty("FORM_ID", formId);
-  props.setProperty("FORM_ADRESI", form.getPublishedUrl());
   ozetiYenile();
-
   Logger.log("Kurulum tamam.");
-  Logger.log("Öğretmenlere gönderilecek form adresi: " + form.getPublishedUrl());
-  Logger.log("Formu düzenleme adresi (yalnızca siz): " + form.getEditUrl());
+  kurulumSonuMesaji(form);
+}
+
+// Form soruları değiştiğinde: eski formu kapatır ve tablodan ayırır, eski
+// yanıt sayfasını "Eski yanıtlar" diye saklar (SİLMEZ), yeni formu kurar.
+// Tetikleyiciler tabloya bağlı olduğu için yeniden kurulmaz.
+function formuYenidenKur() {
+  const ss = SpreadsheetApp.getActive();
+  const props = PropertiesService.getScriptProperties();
+  const eskiId = props.getProperty("FORM_ID");
+  // Eski formu kapatma ve ayırma "olsa iyi olur" adımlarıdır; Google bazı
+  // formlarda bunları reddedebiliyor ("Invalid data updating form").
+  // Başarısız olursa kurulum durmaz, günlüğe elle yapılacak iş yazılır.
+  if (eskiId) {
+    let eski = null;
+    try {
+      eski = FormApp.openById(eskiId);
+    } catch (hata) {
+      Logger.log("Uyarı: eski form açılamadı (silinmiş olabilir): " + hata);
+    }
+    if (eski) {
+      try {
+        eski.setAcceptingResponses(false);
+      } catch (hata) {
+        Logger.log("Uyarı: eski form otomatik kapatılamadı. Eski formu açıp Yanıtlar sekmesinde " +
+          "\"Yanıt kabul ediliyor\" anahtarını kapatın veya formu Drive'dan silin. (" + hata + ")");
+      }
+      try {
+        eski.removeDestination();
+      } catch (hata) {
+        Logger.log("Uyarı: eski form tablodan ayrılamadı; eski yanıt sayfası yine de yeniden adlandırılacak. (" + hata + ")");
+      }
+    }
+  }
+  const eskiSayfa = ss.getSheetByName(YANIT_SAYFASI);
+  if (eskiSayfa) {
+    const tarih = Utilities.formatDate(new Date(), ss.getSpreadsheetTimeZone(), "yyyy-MM-dd HH.mm");
+    eskiSayfa.setName(`Eski yanıtlar ${tarih}`);
+  }
+  props.deleteProperty("FORM_ID");
+
+  const form = formuKurVeBagla(ss, props);
+  onbellegiTemizle();
+  ozetiYenile();
+  Logger.log("Form yeniden kuruldu. Eski yanıtlar ayrı bir sayfada saklandı; kontrol edip silebilirsiniz.");
+  kurulumSonuMesaji(form);
 }

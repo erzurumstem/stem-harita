@@ -8,7 +8,8 @@ const AYARLAR = {
   baslangic: "2026-09-01",
   bitis: "2027-08-31",
   veriUrl: "https://script.google.com/macros/s/AKfycbyS3Or1oT0mRt6PY7kYW70DGlwTgmYiiyvP0ffC3sb35ctWXvO0OMksnJQOyxZ4Ah_lxg/exec",
-  testVeriUrl: "data/ornek-etkinlikler.json"
+  testVeriUrl: "data/ornek-etkinlikler.json",
+  formUrl: "https://docs.google.com/forms/d/e/1FAIpQLSfg8AG0ynp-Wg6yT4kMTUGu-GVa98dEuNw9yEN6Kv5EXyG8Uw/viewform"
 };
 
 // Bilgisayarda (localhost) veya ev ağından (telefonla deneme) açılınca
@@ -690,8 +691,46 @@ function lejantEkle(harita) {
   lejant.addTo(harita);
 }
 
+// ---------------------------------------------------------------------------
+// "Etkinliğini ekle": Google Form site içinde bir panelde açılır. Form
+// yalnızca düğmeye basıldığında yüklenir; haritaya bakan ziyaretçi Google'a
+// bağlanmaz.
+
+function formDugmesiniKur() {
+  const panel = document.getElementById("form-paneli");
+  const acDugmesi = document.getElementById("ekle-panel");
+  const kapatDugmesi = document.getElementById("form-kapat");
+  let cerceve = null;
+
+  const kapat = () => {
+    panel.classList.remove("acik");
+    panel.setAttribute("aria-hidden", "true");
+    acDugmesi.setAttribute("aria-expanded", "false");
+    acDugmesi.focus({ preventScroll: true });
+  };
+  acDugmesi.addEventListener("click", () => {
+    if (!cerceve) {
+      cerceve = document.createElement("iframe");
+      cerceve.className = "form-cercevesi";
+      cerceve.title = "Etkinlik kayıt formu";
+      cerceve.src = `${AYARLAR.formUrl}?embedded=true`;
+      cerceve.addEventListener("load", () => { document.getElementById("form-yukleniyor").hidden = true; });
+      panel.append(cerceve);
+    }
+    panel.classList.add("acik");
+    panel.setAttribute("aria-hidden", "false");
+    acDugmesi.setAttribute("aria-expanded", "true");
+    kapatDugmesi.focus({ preventScroll: true });
+  });
+  kapatDugmesi.addEventListener("click", kapat);
+  document.addEventListener("keydown", (olay) => {
+    if (olay.key === "Escape" && panel.classList.contains("acik")) kapat();
+  });
+}
+
 async function baslat() {
   sayfaBasliklariniKur();
+  formDugmesiniKur();
   const harita = haritaKur();
   durumGoster("Harita yükleniyor…");
 

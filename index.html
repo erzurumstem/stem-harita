@@ -9,6 +9,7 @@
     style-src 'self' https://cdn.jsdelivr.net 'unsafe-inline';
     img-src 'self' data: https://cdn.jsdelivr.net;
     connect-src 'self' https://script.google.com https://script.googleusercontent.com;
+    frame-src https://docs.google.com;
     base-uri 'self';
     form-action 'none';
     object-src 'none'">
@@ -29,12 +30,20 @@
 <body>
   <header class="ust">
     <h1 id="baslik">STEM Etkinlik Haritası</h1>
+    <button id="ekle-panel" class="ekle-dugme" type="button" aria-controls="form-paneli" aria-expanded="false">+ Etkinliğini ekle</button>
   </header>
 
   <main class="icerik">
     <div class="harita-alani">
       <div id="harita" class="harita" role="region" aria-label="Etkinlik haritası"></div>
       <p id="durum" class="durum" role="status" hidden></p>
+      <aside id="form-paneli" class="form-paneli" aria-label="Etkinlik kayıt formu" aria-hidden="true">
+        <div class="form-paneli-ust">
+          <h2>Etkinliğini ekle</h2>
+          <button id="form-kapat" class="detay-kapat" type="button" aria-label="Kapat">×</button>
+        </div>
+        <p id="form-yukleniyor" class="form-yukleniyor">Form yükleniyor…</p>
+      </aside>
       <aside id="detay" class="detay" aria-label="Etkinlik ayrıntıları" aria-hidden="true">
         <button id="detay-kapat" class="detay-kapat" type="button" aria-label="Kapat">×</button>
         <div id="detay-icerik" class="detay-icerik"></div>
