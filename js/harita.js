@@ -7,7 +7,7 @@ const AYARLAR = {
   donem: "2026-2027",
   baslangic: "2026-09-01",
   bitis: "2027-08-31",
-  veriUrl: null, // 6. aşamada Apps Script adresi yazılacak
+  veriUrl: "https://script.google.com/macros/s/AKfycbyS3Or1oT0mRt6PY7kYW70DGlwTgmYiiyvP0ffC3sb35ctWXvO0OMksnJQOyxZ4Ah_lxg/exec",
   testVeriUrl: "data/ornek-etkinlikler.json"
 };
 
@@ -238,7 +238,7 @@ function okulAnahtari(okulAdi, ilce) {
   return `${okulAdi}|${ilce}`;
 }
 
-function kayitlariDogrula(hamKayitlar, ilceAdlari, bilinenOkullar) {
+function kayitlariDogrula(hamKayitlar, ilceAdlari) {
   if (!Array.isArray(hamKayitlar)) throw new Error("Etkinlik verisi bir liste değil.");
   const sonuc = [];
 
@@ -259,9 +259,14 @@ function kayitlariDogrula(hamKayitlar, ilceAdlari, bilinenOkullar) {
       continue;
     }
 
+    // Okul listesi yoktur: okullar kayıtlardan oluşur. Yazım farkları
+    // yönetici tarafından Sheets'te onaydan önce düzeltilir.
     const okulAdi = metin(ham.okulAdi);
+    if (!okulAdi) {
+      uyar("okul adı boş, atlandı.");
+      continue;
+    }
     const anahtar = okulAnahtari(okulAdi, ilce);
-    if (!bilinenOkullar.has(anahtar)) uyar(`"${okulAdi}" (${ilce}) okul listesinde yok; yine de gösteriliyor.`);
 
     let kapsam = metin(ham.kapsam);
     if (!(kapsam in SOZLUK.kapsam)) { uyar(`tanımsız kapsam "${kapsam}", Diğer sayıldı.`); kapsam = "diger"; }
@@ -274,13 +279,6 @@ function kayitlariDogrula(hamKayitlar, ilceAdlari, bilinenOkullar) {
 
     const kizSayisi = sayi(ham.kizSayisi);
     const erkekSayisi = sayi(ham.erkekSayisi);
-
-    // Tekrarsız sayım anahtarları. Numaralar Apps Script'te üretilir; tam ad
-    // ve şube siteye hiç gelmez.
-    const ogretmenNo = metin(ham.ogretmenNo);
-    const grupNo = metin(ham.grupNo);
-    if (!ogretmenNo) uyar("öğretmen numarası yok; öğretmen okul + görünen adla sayıldı.");
-    if (!grupNo) uyar("grup numarası yok; öğrencileri ayrı bir grup olarak sayıldı.");
 
     sonuc.push({
       id,
@@ -296,63 +294,10 @@ function kayitlariDogrula(hamKayitlar, ilceAdlari, bilinenOkullar) {
       erkekSayisi,
       toplamOgrenci: kizSayisi + erkekSayisi,
       aciklama: aciklamaKirp(ham.aciklama),
-      ogretmenAdi: metin(ham.ogretmenAdi),
-      ogretmenAnahtari: ogretmenNo ? `o${ogretmenNo}` : `${anahtar}|${metin(ham.ogretmenAdi) || id}`,
-      grupAnahtari: grupNo ? `g${grupNo}` : `k${id}`
+      ogretmenAdi: metin(ham.ogretmenAdi)
     });
   }
   return sonuc;
-}
-
-// ---------------------------------------------------------------------------
-// Özet: tekrarsız sayımlar (CLAUDE.md "Hesaplanan alanlar").
-
-function ozetHesapla(kayitlar) {
-  const okullar = new Set();
-  const ogretmenler = new Set();
-  const gruplar = new Map();
-  for (const k of kayitlar) {
-    okullar.add(k.okulAnahtari);
-    ogretmenler.add(k.ogretmenAnahtari);
-    // Aynı öğrenci grubu kaç etkinliğe katılırsa katılsın bir kez sayılır;
-    // kız ve erkek için o gruptaki en yüksek sayı alınır.
-    const g = gruplar.get(k.grupAnahtari) || { kiz: 0, erkek: 0 };
-    g.kiz = Math.max(g.kiz, k.kizSayisi);
-    g.erkek = Math.max(g.erkek, k.erkekSayisi);
-    gruplar.set(k.grupAnahtari, g);
-  }
-  let kiz = 0, erkek = 0;
-  for (const g of gruplar.values()) { kiz += g.kiz; erkek += g.erkek; }
-  return {
-    etkinlik: kayitlar.length,
-    okul: okullar.size,
-    ogretmen: ogretmenler.size,
-    kiz,
-    erkek,
-    ogrenci: kiz + erkek
-  };
-}
-
-// Özet her zaman il genelidir: sitede ilçe/okul kıyaslaması yapılmaz
-// (kullanıcı kararı; ayrıntılı döküm yalnızca yöneticinin Sheets'inde).
-function ozetGoster(kayitlar) {
-  const kutu = document.getElementById("ozet");
-  kutu.replaceChildren();
-  if (!kayitlar.length) {
-    kutu.textContent = "Henüz haritada gösterilecek etkinlik yok.";
-    return;
-  }
-  const o = ozetHesapla(kayitlar);
-  const sayiYaz = (n) => n.toLocaleString("tr-TR");
-  const kalin = (yazi) => el("strong", "", yazi);
-  kutu.append(
-    kalin(`${sayiYaz(o.etkinlik)} etkinlik`), ", ",
-    kalin(`${sayiYaz(o.okul)} okulda`), " ",
-    kalin(`${sayiYaz(o.ogretmen)} öğretmen`), " tarafından ",
-    kalin(`${sayiYaz(o.kiz)} kız`), " ve ",
-    kalin(`${sayiYaz(o.erkek)} erkek`), ", toplam ",
-    kalin(`${sayiYaz(o.ogrenci)} farklı öğrenciyle`), " gerçekleştirildi."
-  );
 }
 
 // ---------------------------------------------------------------------------
@@ -765,10 +710,8 @@ async function baslat() {
 
   durumGoster("Etkinlikler yükleniyor…");
   try {
-    const [okulListesi, hamKayitlar] = await Promise.all([jsonGetir("data/okullar.json"), etkinlikleriYukle()]);
-    const bilinenOkullar = new Set(okulListesi.map((o) => okulAnahtari(metin(o.okulAdi), metin(o.ilce))));
-    const kayitlar = kayitlariDogrula(hamKayitlar, new Set(ilceGeolari.keys()), bilinenOkullar);
-    ozetGoster(kayitlar);
+    const hamKayitlar = await etkinlikleriYukle();
+    const kayitlar = kayitlariDogrula(hamKayitlar, new Set(ilceGeolari.keys()));
     const detay = detayPaneliKur(harita, kayitlar);
     const isaretler = isaretcileriCiz(harita, kayitlar, ilceGeolari, detay);
 
@@ -795,7 +738,6 @@ async function baslat() {
     else durumGizle();
   } catch (hata) {
     console.error(hata);
-    document.getElementById("ozet").textContent = "";
     durumGoster("Etkinlik verileri şu an yüklenemedi. Lütfen sayfayı daha sonra yenileyin.", true);
   }
 }
