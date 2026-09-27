@@ -1,0 +1,106 @@
+:root {
+  --zemin: #f6f8fb;
+  --yuzey: #ffffff;
+  --metin: #1b2433;
+  --metin-soluk: #5a6578;
+  --vurgu: #1f3b63;
+  --cizgi: #d9dfe8;
+  --hata-zemin: #fdecea;
+  --hata-metin: #8a1c12;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+  background: var(--zemin);
+  color: var(--metin);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-size: 16px;
+  line-height: 1.4;
+}
+
+a { color: var(--vurgu); }
+
+/* Başlık */
+.ust {
+  padding: 10px 16px;
+  background: var(--vurgu);
+  color: #fff;
+}
+.ust h1 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+/* Harita */
+.icerik {
+  position: relative;
+  flex: 1;
+  display: flex;
+  min-height: 60vh;
+}
+.harita {
+  flex: 1;
+  background: var(--zemin);
+}
+
+/* Yükleniyor / hata mesajı */
+.durum {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+  max-width: calc(100% - 32px);
+  margin: 0;
+  padding: 8px 14px;
+  border-radius: 6px;
+  background: var(--yuzey);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .15);
+  font-size: .9rem;
+}
+.durum.hata {
+  background: var(--hata-zemin);
+  color: var(--hata-metin);
+}
+
+/* Tıklanan ilçede tarayıcının kare odak çerçevesi çıkmasın;
+   seçim, sınırın koyulaşmasıyla gösterilir. */
+.leaflet-interactive:focus { outline: none; }
+
+/* İlçe adı etiketi: kutusuz, beyaz hareli yazı */
+.leaflet-tooltip.ilce-etiket {
+  padding: 0;
+  background: none;
+  border: none;
+  box-shadow: none;
+  color: var(--metin);
+  font-size: 12px;
+  font-weight: 700;
+  text-shadow: 0 0 3px #fff, 0 0 3px #fff, 0 0 3px #fff;
+}
+.leaflet-tooltip.ilce-etiket::before { display: none; }
+
+/* Sayfa altı */
+.alt {
+  padding: 8px 16px 12px;
+  border-top: 1px solid var(--cizgi);
+  background: var(--yuzey);
+  color: var(--metin-soluk);
+  font-size: .8rem;
+  overflow-wrap: anywhere;
+}
+.alt p { margin: 2px 0; }
+
+@media (min-width: 768px) {
+  .ust h1 { font-size: 1.3rem; }
+}
