@@ -446,11 +446,35 @@ function formGonderildi(e) {
   ozetiYenile();
 }
 
-// Yanıtlar sayfasında düzeltme veya onay: siteye giden veri hemen yenilensin.
+// Yanıtlar sayfasında hücre düzeltme veya onay: siteye giden veri hemen
+// yenilensin. (Satır silme bunu tetiklemez; bkz. degisti.)
 function duzenlendi(e) {
   if (!e || e.range.getSheet().getName() !== YANIT_SAYFASI) return;
   onbellegiTemizle();
   ozetiYenile();
+}
+
+// Satır silme / ekleme gibi yapısal değişiklikler onEdit'i TETİKLEMEZ;
+// bunlar onChange ile yakalanır. Sıradan hücre düzenlemesi ("EDIT")
+// duzenlendi() tarafından zaten işlendiği için burada atlanır.
+function degisti(e) {
+  if (e && e.changeType === "EDIT") return;
+  onbellegiTemizle();
+  ozetiYenile();
+}
+
+// Bu projenin tetikleyicilerini (yeniden) kurar; eskiler silinir, böylece
+// iki kez çalıştırılsa da aynı tetikleyiciden iki tane oluşmaz.
+function tetikleyicileriKur() {
+  const ss = SpreadsheetApp.getActive();
+  const bizimkiler = ["formGonderildi", "duzenlendi", "degisti"];
+  ScriptApp.getProjectTriggers()
+    .filter((t) => bizimkiler.includes(t.getHandlerFunction()))
+    .forEach((t) => ScriptApp.deleteTrigger(t));
+  ScriptApp.newTrigger("formGonderildi").forSpreadsheet(ss).onFormSubmit().create();
+  ScriptApp.newTrigger("duzenlendi").forSpreadsheet(ss).onEdit().create();
+  ScriptApp.newTrigger("degisti").forSpreadsheet(ss).onChange().create();
+  Logger.log("Tetikleyiciler kuruldu: " + bizimkiler.join(", "));
 }
 
 function onOpen() {
@@ -602,8 +626,7 @@ function kurulum() {
     if (s.getName() !== YANIT_SAYFASI && s.getLastRow() === 0 && ss.getSheets().length > 1) ss.deleteSheet(s);
   });
 
-  ScriptApp.newTrigger("formGonderildi").forSpreadsheet(ss).onFormSubmit().create();
-  ScriptApp.newTrigger("duzenlendi").forSpreadsheet(ss).onEdit().create();
+  tetikleyicileriKur();
   ozetiYenile();
   Logger.log("Kurulum tamam.");
   kurulumSonuMesaji(form);
