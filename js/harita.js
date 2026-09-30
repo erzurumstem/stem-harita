@@ -529,36 +529,48 @@ function pinIkonu(kapsam, secili) {
   return pinIkonlari.get(anahtar);
 }
 
-// Etiketli okul rozeti: lacivert daire içinde sarı yıldız (sabit SVG).
-const YILDIZ_SVG = `<svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true">
-  <circle cx="12" cy="12" r="11" fill="#1f3b63" stroke="#fff" stroke-width="1.5"/>
-  <path d="M12.0 5.8L13.7 10.3L18.5 10.5L14.8 13.5L16.0 18.1L12.0 15.5L8.0 18.1L9.2 13.5L5.5 10.5L10.3 10.3Z" fill="#FFD34D"/></svg>`;
+// Etiketli okul rozeti: altın madalya ve iki lacivert kurdele. Parçalar
+// sabittir (veriden hiçbir şey girmez); aynı tanımdan hem harita simgesinin
+// SVG metni hem de lejant/kart için DOM düğümü üretilir.
+const ROZET_PARCALARI = [
+  ["path", { d: "M7.5 16L4.5 28.5L8 26.6L10.6 29.5L12.2 19Z", fill: "#1f3b63" }],
+  ["path", { d: "M16.5 16L19.5 28.5L16 26.6L13.4 29.5L11.8 19Z", fill: "#2f5a94" }],
+  ["path", {
+    d: "M12.0 0.5L13.8 2.0L16.0 1.3L17.1 3.4L19.4 3.6L19.6 5.9L21.7 7.0L21.0 9.2L22.5 11.0L21.0 12.8L21.7 15.0L19.6 16.1L19.4 18.4L17.1 18.6L16.0 20.7L13.8 20.0L12.0 21.5L10.2 20.0L8.0 20.7L6.9 18.6L4.6 18.4L4.4 16.1L2.3 15.0L3.0 12.8L1.5 11.0L3.0 9.2L2.3 7.0L4.4 5.9L4.6 3.6L6.9 3.4L8.0 1.3L10.2 2.0Z",
+    fill: "#F2C230", stroke: "#8a6d00", "stroke-width": "0.8", "stroke-linejoin": "round"
+  }],
+  ["circle", { cx: "12", cy: "11", r: "6.3", fill: "#1f3b63" }],
+  ["circle", { cx: "12", cy: "11", r: "4.6", fill: "none", stroke: "#F2C230", "stroke-width": "0.9" }]
+];
+const ROZET_SVG = '<svg viewBox="0 0 24 30" width="24" height="30" aria-hidden="true">' +
+  ROZET_PARCALARI.map(([etiket, oz]) =>
+    `<${etiket} ${Object.entries(oz).map(([k, v]) => `${k}="${v}"`).join(" ")}/>`).join("") +
+  "</svg>";
 
-// Okulun etkinlikleri varsa yıldız balonun sağ üst yanına kayar (rozet gibi),
-// yoksa noktanın tam üstünde durur.
-function yildizIkonu(yanaKay) {
+// Okulun etkinlikleri varsa rozet balonun sağ üst yanına kayar, yoksa
+// kurdeleleri noktayı gösterecek biçimde noktanın üstünde durur.
+function rozetIkonu(yanaKay) {
   return L.divIcon({
     className: "etiket-rozeti",
-    html: YILDIZ_SVG,
-    iconSize: [24, 24],
-    iconAnchor: yanaKay ? [-8, 30] : [12, 12],
-    tooltipAnchor: yanaKay ? [20, -30] : [0, -12]
+    html: ROZET_SVG,
+    iconSize: [24, 30],
+    iconAnchor: yanaKay ? [-8, 34] : [12, 30],
+    tooltipAnchor: yanaKay ? [20, -34] : [0, -30]
   });
 }
 
-// Lejant ve kartlar için küçük yıldız (DOM ile kurulur).
-function yildizDugumu() {
+// Lejant ve kartlar için küçük rozet (DOM ile kurulur).
+function rozetDugumu() {
   const ns = "http://www.w3.org/2000/svg";
   const svg = document.createElementNS(ns, "svg");
-  svg.setAttribute("viewBox", "0 0 24 24");
-  svg.setAttribute("class", "yildiz-kucuk");
+  svg.setAttribute("viewBox", "0 0 24 30");
+  svg.setAttribute("class", "rozet-kucuk");
   svg.setAttribute("aria-hidden", "true");
-  const daire = document.createElementNS(ns, "circle");
-  for (const [a, d] of [["cx", 12], ["cy", 12], ["r", 11], ["fill", "#1f3b63"]]) daire.setAttribute(a, d);
-  const yildiz = document.createElementNS(ns, "path");
-  yildiz.setAttribute("d", "M12.0 5.8L13.7 10.3L18.5 10.5L14.8 13.5L16.0 18.1L12.0 15.5L8.0 18.1L9.2 13.5L5.5 10.5L10.3 10.3Z");
-  yildiz.setAttribute("fill", "#FFD34D");
-  svg.append(daire, yildiz);
+  for (const [etiket, oz] of ROZET_PARCALARI) {
+    const parca = document.createElementNS(ns, etiket);
+    for (const [k, v] of Object.entries(oz)) parca.setAttribute(k, v);
+    svg.append(parca);
+  }
   return svg;
 }
 
@@ -663,13 +675,13 @@ function isaretcileriCiz(harita, kayitlar, ilceGeolari, detay) {
 
 // Etiketli okullar ayrı katmanda çizilir; kümelere katılmaz ki "n etkinlik"
 // sayıları bozulmasın.
-function yildizlariCiz(harita, etiketler, kayitlar, ilceGeolari, detay) {
+function rozetleriCiz(harita, etiketler, kayitlar, ilceGeolari, detay) {
   const etkinlikliOkullar = new Set(kayitlar.map((k) => k.okulAnahtari));
   const katman = L.layerGroup();
   for (const etiket of etiketler) {
     const nokta = temsiliNokta(ilceGeolari.get(etiket.ilce), etiket.okulAnahtari);
     const isaretci = L.marker(nokta, {
-      icon: yildizIkonu(etkinlikliOkullar.has(etiket.okulAnahtari)),
+      icon: rozetIkonu(etkinlikliOkullar.has(etiket.okulAnahtari)),
       keyboard: true,
       riseOnHover: true,
       zIndexOffset: 1000
@@ -729,7 +741,7 @@ function detayPaneliKur(harita, tumKayitlar, etiketler) {
     if (etiket) {
       okul.classList.add("etiketli");
       const satir = el("span", "detay-etiket");
-      satir.append(yildizDugumu(), document.createTextNode(etiketMetni(etiket)));
+      satir.append(rozetDugumu(), document.createTextNode(etiketMetni(etiket)));
       okul.append(satir);
     }
 
@@ -795,7 +807,7 @@ function detayPaneliKur(harita, tumKayitlar, etiketler) {
   function etiketDoldur(etiket) {
     icerik.replaceChildren();
     const rozet = el("span", "rozet");
-    rozet.append(yildizDugumu(), document.createTextNode(ETIKET_ADI));
+    rozet.append(rozetDugumu(), document.createTextNode(ETIKET_ADI));
     const baslik = el("h2", "detay-baslik", etiket.okulAdi);
     baslik.id = "detay-baslik";
     const bilgiler = el("dl", "bilgiler");
@@ -889,7 +901,7 @@ function lejantEkle(harita) {
   return {
     etiketSatiriEkle() {
       const oge = el("li", "lejant-ayrac");
-      oge.append(yildizDugumu(), document.createTextNode(ETIKET_ADI));
+      oge.append(rozetDugumu(), document.createTextNode(ETIKET_ADI));
       lejant.getContainer().querySelector("ul").append(oge);
     }
   };
@@ -960,7 +972,7 @@ async function baslat() {
     const etiketler = etiketleriDogrula(veri.etiketliOkullar, ilceAdlari);
     const detay = detayPaneliKur(harita, kayitlar, etiketler);
     const isaretler = isaretcileriCiz(harita, kayitlar, ilceGeolari, detay);
-    yildizlariCiz(harita, etiketler, kayitlar, ilceGeolari, detay);
+    rozetleriCiz(harita, etiketler, kayitlar, ilceGeolari, detay);
     if (etiketler.length) lejant.etiketSatiriEkle();
 
     // İlçeye tıklamak yalnızca ilçeyi vurgular ve yakınlaştırır (özet
