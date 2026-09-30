@@ -29,7 +29,8 @@ const SORU = {
   sinif: "Sınıf",
   sube: "Şubeler",
   sube1112: "Şubeler (11. ve 12. sınıf)",
-  tarih: "Etkinlik tarihi",
+  tarih: "Başlangıç tarihi",
+  bitis: "Bitiş tarihi",
   kiz: "Katılan kız öğrenci sayısı",
   erkek: "Katılan erkek öğrenci sayısı",
   aciklama: "Kısa açıklama",
@@ -41,6 +42,7 @@ const SORU = {
 // sütun aynı adı taşırdı.)
 const SORU_ESKI = {
   icerik: "Etkinlikte ne yapıldı?",
+  tarih: "Etkinlik tarihi",
   sube: "Şube",
   sube1112: "Şube (11. ve 12. sınıf)"
 };
@@ -148,6 +150,13 @@ function cevap(satir, alan) {
   return temizle(satir[SORU[alan]]) || (SORU_ESKI[alan] ? temizle(satir[SORU_ESKI[alan]]) : "");
 }
 
+// cevap() gibi, ama değeri olduğu gibi (ör. tarih nesnesi) döndürür.
+function hamCevap(satir, alan) {
+  const deger = satir[SORU[alan]];
+  if (deger !== undefined && deger !== null && deger !== "") return deger;
+  return SORU_ESKI[alan] ? satir[SORU_ESKI[alan]] : "";
+}
+
 function tersSozluk(sozluk) {
   const ters = {};
   Object.keys(sozluk).forEach((kod) => { ters[sozluk[kod]] = kod; });
@@ -215,10 +224,9 @@ function kayitOlustur(satir, saatDilimi) {
   const okulAdi = temizle(satir[SORU.okul]);
   const ilce = temizle(satir[SORU.ilce]);
   const tamAd = temizle(satir[SORU.ad]);
-  const tarihHam = satir[SORU.tarih];
-  const tarih = tarihMi(tarihHam)
-    ? Utilities.formatDate(tarihHam, saatDilimi, "yyyy-MM-dd")
-    : temizle(tarihHam);
+  const tarihYaz = (ham) => (tarihMi(ham) ? Utilities.formatDate(ham, saatDilimi, "yyyy-MM-dd") : temizle(ham));
+  const tarih = tarihYaz(hamCevap(satir, "tarih"));
+  const bitisTarihi = tarihYaz(hamCevap(satir, "bitis"));   // isteğe bağlı
 
   const okulAnahtari = `${sadelestir(okulAdi)}|${ilce}`;
   const ogretmenAnahtari = `${okulAnahtari}|${sadelestir(tamAd)}`;
@@ -243,6 +251,7 @@ function kayitOlustur(satir, saatDilimi) {
     icerik: icerikKodlari,
     sinifDuzeyi: sinifDuzeyiBul(sinif),
     tarih,
+    bitisTarihi,
     kizSayisi,
     erkekSayisi,
     aciklama: temizle(satir[SORU.aciklama]),
@@ -273,6 +282,8 @@ function yayinKaydi(k) {
     icerik: k.icerik,
     sinifDuzeyi: k.sinifDuzeyi,
     tarih: k.tarih,
+    // Tek günlük etkinlikte alan hiç yazılmaz (JSON.stringify undefined'ı atlar).
+    bitisTarihi: k.bitisTarihi && k.bitisTarihi !== k.tarih ? k.bitisTarihi : undefined,
     kizSayisi: k.kizSayisi,
     erkekSayisi: k.erkekSayisi,
     aciklama: k.aciklama,
@@ -382,6 +393,11 @@ function kayitUyarilari(k, bugun) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(k.tarih)) uyarilar.push("Tarih boş veya geçersiz");
   else if (k.tarih < baslangic || k.tarih > bitis) uyarilar.push("Tarih dönem dışında (sitede görünmez)");
   else if (k.tarih > bugun) uyarilar.push("İleri tarihli etkinlik");
+  if (k.bitisTarihi) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(k.bitisTarihi)) uyarilar.push("Bitiş tarihi geçersiz");
+    else if (k.bitisTarihi < k.tarih) uyarilar.push("Bitiş tarihi başlangıçtan önce (sitede tek gün görünür)");
+    else if (k.bitisTarihi < baslangic || k.bitisTarihi > bitis) uyarilar.push("Bitiş tarihi dönem dışında");
+  }
   const toplam = k.kizSayisi + k.erkekSayisi;
   if (toplam === 0) uyarilar.push("Öğrenci sayısı 0");
   else if (toplam > 200) uyarilar.push(`Öğrenci sayısı çok yüksek (${toplam})`);
@@ -572,6 +588,12 @@ const SUBE_NOTU = "Etkinliği aynı sınıfın birden fazla şubesiyle yaptıysa
   "Öğrenci sayılarına seçtiğiniz şubelerin toplamını yazınız.";
 const SAYI_NOTU = "Birden fazla şube seçtiyseniz tüm şubelerin toplamını yazınız.";
 
+function bitisSorusuEkle(form) {
+  return form.addDateItem().setTitle(SORU.bitis)
+    .setHelpText("Etkinlik tek gün sürdüyse boş bırakınız.")
+    .setRequired(false);
+}
+
 function icerikSorusuEkle(form) {
   return form.addCheckboxItem().setTitle(SORU.icerik)
     .setHelpText("Birden fazla seçebilirsiniz.")
@@ -638,6 +660,7 @@ function formuOlustur() {
   }));
 
   form.addDateItem().setTitle(SORU.tarih).setRequired(true);
+  bitisSorusuEkle(form);
   form.addTextItem().setTitle(SORU.kiz).setHelpText(SAYI_NOTU).setRequired(true).setValidation(sayiDogrulama);
   form.addTextItem().setTitle(SORU.erkek).setHelpText(SAYI_NOTU).setRequired(true).setValidation(sayiDogrulama);
   form.addParagraphTextItem().setTitle(SORU.aciklama)
@@ -762,6 +785,7 @@ function formuYenidenKur() {
 //   - "Etkinlikte ne yapıldı?" çok seçimli "Etkinlikte neler yapıldı?" olur,
 //   - "Anasınıfı" seçeneği "Okul öncesi" olur,
 //   - şube soruları çok seçimli olur,
+//   - "Etkinlik tarihi" "Başlangıç tarihi" olur, isteğe bağlı "Bitiş tarihi" eklenir,
 //   - açıklama ve yardım metinleri yenilenir, tetikleyiciler yeniden kurulur.
 // Tür değiştirilemeyen sorular (tek seçim → işaret kutusu) aynı yerde yenisiyle
 // değiştirilir; eski cevaplar Sheets'teki eski sütunda kalır ve okunmaya devam
@@ -834,6 +858,18 @@ function formuGuncelle() {
   if (sube1112) {
     ogeyiDegistir(form, sube1112, sube1112SorusuEkle);
     yapilan.push("11-12 şube sorusu çok seçimli");
+  }
+
+  const eskiTarih = ogeBul(form, SORU_ESKI.tarih, T.DATE);
+  if (eskiTarih) {
+    eskiTarih.setTitle(SORU.tarih);
+    yapilan.push(`"${SORU_ESKI.tarih}" → "${SORU.tarih}"`);
+  }
+  const baslangicOge = ogeBul(form, SORU.tarih, T.DATE);
+  if (baslangicOge && !ogeBul(form, SORU.bitis, T.DATE)) {
+    const yeni = bitisSorusuEkle(form);
+    form.moveItem(yeni.getIndex(), baslangicOge.getIndex() + 1);
+    yapilan.push("bitiş tarihi sorusu");
   }
 
   [SORU.kiz, SORU.erkek].forEach((baslik) => {

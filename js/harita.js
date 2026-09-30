@@ -258,6 +258,14 @@ function kayitlariDogrula(hamKayitlar, ilceAdlari) {
       continue;
     }
 
+    // Bitiş tarihi isteğe bağlıdır (tek günlük etkinlikte yoktur).
+    let bitisTarihi = metin(ham.bitisTarihi);
+    if (bitisTarihi && (!/^\d{4}-\d{2}-\d{2}$/.test(bitisTarihi) || bitisTarihi < tarih)) {
+      uyar(`bitiş tarihi "${bitisTarihi}" geçersiz veya başlangıçtan önce, yok sayıldı.`);
+      bitisTarihi = "";
+    }
+    if (bitisTarihi === tarih) bitisTarihi = "";
+
     const ilce = metin(ham.ilce);
     if (!ilceAdlari.has(ilce)) {
       uyar(`ilçe "${ilce}" ilçe listesinde yok, atlandı.`);
@@ -302,6 +310,7 @@ function kayitlariDogrula(hamKayitlar, ilceAdlari) {
       icerik,
       sinifDuzeyi,
       tarih,
+      bitisTarihi,
       kizSayisi,
       erkekSayisi,
       toplamOgrenci: kizSayisi + erkekSayisi,
@@ -436,10 +445,16 @@ async function etkinlikleriYukle() {
 // ---------------------------------------------------------------------------
 // İşaretçiler
 
-function tarihYaz(tarih) {
-  return new Date(`${tarih}T00:00:00`).toLocaleDateString("tr-TR", {
-    day: "numeric", month: "long", year: "numeric"
-  });
+const TARIH_BICIMI = new Intl.DateTimeFormat("tr-TR", { day: "numeric", month: "long", year: "numeric" });
+
+// "14 Ekim 2026"; bitiş varsa "14–18 Ekim 2026" / "28 Ekim – 3 Kasım 2026".
+function tarihYaz(kayit) {
+  const bas = new Date(`${kayit.tarih}T00:00:00`);
+  if (!kayit.bitisTarihi) return TARIH_BICIMI.format(bas);
+  const son = new Date(`${kayit.bitisTarihi}T00:00:00`);
+  return TARIH_BICIMI.formatRange
+    ? TARIH_BICIMI.formatRange(bas, son)
+    : `${TARIH_BICIMI.format(bas)} – ${TARIH_BICIMI.format(son)}`;
 }
 
 // Küçük DOM yardımcısı: metin her zaman textContent ile yazılır.
@@ -607,7 +622,7 @@ function detayPaneliKur(harita, tumKayitlar) {
     const okul = el("p", "detay-okul", `${kayit.okulAdi} · ${kayit.ilce}`);
 
     const bilgiler = el("dl", "bilgiler");
-    bilgiSatiri(bilgiler, "Tarih", tarihYaz(kayit.tarih));
+    bilgiSatiri(bilgiler, "Tarih", tarihYaz(kayit));
     bilgiSatiri(bilgiler, kayit.icerik.length > 1 ? "Etkinlik türleri" : "Etkinlik türü",
       kayit.icerik.map((kod) => SOZLUK.icerik[kod]).join(", "));
     bilgiSatiri(bilgiler, "Sınıf düzeyi", kayit.sinifDuzeyi ? SOZLUK.sinifDuzeyi[kayit.sinifDuzeyi] : "—");
@@ -647,7 +662,7 @@ function detayPaneliKur(harita, tumKayitlar) {
         dugme.type = "button";
         const renkNoktasi = el("span", "rozet-renk");
         renkNoktasi.style.backgroundColor = SOZLUK.kapsam[k.kapsam].renk;
-        dugme.append(renkNoktasi, el("span", "diger-ad", k.etkinlikAdi), el("span", "diger-tarih", tarihYaz(k.tarih)));
+        dugme.append(renkNoktasi, el("span", "diger-ad", k.etkinlikAdi), el("span", "diger-tarih", tarihYaz(k)));
         dugme.addEventListener("click", () => ac(k));
         const oge = el("li");
         oge.append(dugme);
