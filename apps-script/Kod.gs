@@ -9,7 +9,8 @@
 //   formuGuncelle()  Eski yapıdaki formu yerinde yeni yapıya getirir (form
 //                    adresi ve mevcut yanıtlar korunur).
 //   doGet()          Web uygulaması: siteye YALNIZCA onaylı kayıtların izin
-//                    verilen alanlarını JSON olarak verir.
+//                    verilen alanlarını ve "Etiketler" sayfasındaki STEM School
+//                    Label okullarını JSON olarak verir.
 //   ozetiYenile()    Yalnızca yöneticinin gördüğü Özet sayfasını hesaplar.
 //
 // KVKK: Tam ad, şube, zaman damgası ve onaysız kayıtlar doGet çıktısına
@@ -46,6 +47,9 @@ const SORU_ESKI = {
   sube: "Şube",
   sube1112: "Şube (11. ve 12. sınıf)"
 };
+// STEM School Label okulları: yönetici "Etiketler" sayfasına elle girer.
+const ETIKET_SAYFASI = "Etiketler";
+const ETIKET_BASLIKLARI = ["İlçe", "Okul adı", "Tür", "Yıl"];
 const ONAY_SUTUNU = "Onay";
 const YANIT_SAYFASI = "Yanıtlar";
 const OZET_SAYFASI = "Özet";
@@ -71,6 +75,11 @@ const ICERIK = {
   yapayzeka: "Yapay Zekâ ve Veri",
   unplugged: "Bilgisayarsız Etkinlik",
   diger: "Diğer STEM etkinlikleri"
+};
+const ETIKET_TURU = {
+  competent: "Competent",
+  proficient: "Proficient",
+  expert: "Expert"
 };
 const SINIF_DUZEYI = {
   okuloncesi: "Okul Öncesi",
@@ -292,8 +301,60 @@ function yayinKaydi(k) {
   };
 }
 
+// Etiketler sayfasının satırları. Okul adı onaylı etkinliklerde (küçük yazım
+// farklarıyla) geçiyorsa oradaki yazım kullanılır; böylece yıldız, okulun
+// etkinlikleriyle aynı temsilî noktaya düşer.
+function etiketleriOku(onayliKayitlar) {
+  const sayfa = SpreadsheetApp.getActive().getSheetByName(ETIKET_SAYFASI);
+  if (!sayfa || sayfa.getLastRow() < 2) return [];
+  const yazim = {};
+  onayliKayitlar.forEach((k) => { if (!yazim[k.okulAnahtari]) yazim[k.okulAnahtari] = k.okulAdi; });
+  const turKodu = tersSozluk(ETIKET_TURU);
+  return sayfa.getRange(2, 1, sayfa.getLastRow() - 1, ETIKET_BASLIKLARI.length).getValues()
+    .map((r, i) => {
+      const ilce = temizle(r[0]);
+      const yazilan = temizle(r[1]);
+      const okulAnahtari = `${sadelestir(yazilan)}|${ilce}`;
+      const turHam = temizle(r[2]);
+      const yilHam = temizle(r[3]);
+      return {
+        satirNo: i + 2,
+        ilce,
+        yazilan,
+        okulAdi: yazim[okulAnahtari] || yazilan,
+        okulAnahtari,
+        turHam,
+        tur: turKodu[turHam] || "",
+        yilHam,
+        yil: /^\d{4}$/.test(yilHam) ? yilHam : ""
+      };
+    })
+    .filter((e) => e.ilce || e.yazilan || e.turHam || e.yilHam);
+}
+
+function etiketGecerliMi(e) {
+  return Boolean(e.yazilan) && AYARLAR.ilceler.includes(e.ilce);
+}
+
+// Okul başına bir etiket yayımlanır; aynı okul birden çok satırdaysa en yeni yıl.
+function yayinEtiketleri(etiketler) {
+  const secilen = {};
+  etiketler.filter(etiketGecerliMi).forEach((e) => {
+    const onceki = secilen[e.okulAnahtari];
+    if (!onceki || e.yil > onceki.yil) secilen[e.okulAnahtari] = e;
+  });
+  return Object.keys(secilen).map((a) => {
+    const e = secilen[a];
+    return { okulAdi: e.okulAdi, ilce: e.ilce, tur: e.tur, yil: e.yil };
+  });
+}
+
 function yayinVerisi() {
-  return kayitlariOku().filter((k) => k.onay).map(yayinKaydi);
+  const onayli = kayitlariOku().filter((k) => k.onay);
+  return {
+    etkinlikler: onayli.map(yayinKaydi),
+    etiketliOkullar: yayinEtiketleri(etiketleriOku(onayli))
+  };
 }
 
 function doGet() {
@@ -405,6 +466,16 @@ function kayitUyarilari(k, bugun) {
   return uyarilar;
 }
 
+function etiketUyarilari(e, satirSayisi) {
+  const uyarilar = [];
+  if (!e.yazilan) uyarilar.push("Okul adı boş (sitede görünmez)");
+  if (!AYARLAR.ilceler.includes(e.ilce)) uyarilar.push("İlçe boş veya geçersiz (sitede görünmez)");
+  if (!e.tur) uyarilar.push("Tür boş veya geçersiz");
+  if (e.yilHam && !e.yil) uyarilar.push("Yıl geçersiz");
+  if (satirSayisi[e.okulAnahtari] > 1) uyarilar.push("Aynı okul birden fazla satırda (en yeni yıl gösterilir)");
+  return uyarilar;
+}
+
 function ozetiYenile() {
   const ss = SpreadsheetApp.getActive();
   const sayfa = ss.getSheetByName(OZET_SAYFASI) || ss.insertSheet(OZET_SAYFASI);
@@ -463,6 +534,17 @@ function ozetiYenile() {
   }).sort((x, y) => x[0].localeCompare(y[0], "tr") || x[1].localeCompare(y[1], "tr"));
   tablo(["İlçe", "Okul", "Etkinlik", "Öğretmen", "Kız", "Erkek", "Farklı öğrenci"], okulSatirlari);
 
+  bolum(`Etiketli okullar (STEM School Label) — "${ETIKET_SAYFASI}" sayfasından`);
+  const etiketler = etiketleriOku(onayli);
+  const satirSayisi = {};
+  etiketler.filter(etiketGecerliMi).forEach((e) => { satirSayisi[e.okulAnahtari] = (satirSayisi[e.okulAnahtari] || 0) + 1; });
+  const etkinlikSayisi = {};
+  onayli.forEach((k) => { etkinlikSayisi[k.okulAnahtari] = (etkinlikSayisi[k.okulAnahtari] || 0) + 1; });
+  tablo(["Etiketler satırı", "İlçe", "Okul adı (haritada)", "Tür", "Yıl", "Onaylı etkinlik", "Uyarı"],
+    etiketler.map((e) => [e.satirNo, e.ilce, e.okulAdi, e.turHam, e.yilHam, etkinlikSayisi[e.okulAnahtari] || 0,
+      etiketUyarilari(e, satirSayisi).join(" · ")]));
+  satirlar.push(["Not: Okul adı etkinlik kayıtlarındakinden yalnızca büyük/küçük harf, Türkçe harf veya nokta farkıyla ayrılıyorsa aynı okul sayılır. \"Onaylı etkinlik\" 0 ise adı kontrol edin."]);
+
   // Yazım denetimi: ONAYSIZLAR DAHİL tüm kayıtlar. Sadeleştirilmiş hali aynı
   // olup farklı yazılan adlar "olası mükerrer" diye işaretlenir.
   bolum("Okul adları (onaysızlar dahil) — onaydan önce yazımı düzeltin");
@@ -513,10 +595,12 @@ function formGonderildi(e) {
   ozetiYenile();
 }
 
-// Yanıtlar sayfasında hücre düzeltme veya onay: siteye giden veri hemen
+// Yanıtlar / Etiketler sayfasında hücre düzeltme veya onay: siteye giden veri hemen
 // yenilensin. (Satır silme bunu tetiklemez; bkz. degisti.)
 function duzenlendi(e) {
-  if (!e || e.range.getSheet().getName() !== YANIT_SAYFASI) return;
+  if (!e) return;
+  const sayfaAdi = e.range.getSheet().getName();
+  if (sayfaAdi !== YANIT_SAYFASI && sayfaAdi !== ETIKET_SAYFASI) return;
   onbellegiTemizle();
   ozetiYenile();
 }
@@ -554,6 +638,26 @@ function onOpen() {
 
 // ---------------------------------------------------------------------------
 // Kurulum (bir kez)
+
+// "Etiketler" sayfasını başlıkları ve açılır listeleriyle kurar (yoksa).
+function etiketSayfasiKur() {
+  const ss = SpreadsheetApp.getActive();
+  if (ss.getSheetByName(ETIKET_SAYFASI)) return false;
+  const sayfa = ss.insertSheet(ETIKET_SAYFASI);
+  sayfa.getRange(1, 1, 1, ETIKET_BASLIKLARI.length).setValues([ETIKET_BASLIKLARI])
+    .setFontWeight("bold").setBackground("#fff2cc");
+  sayfa.getRange(1, 2).setNote("STEM School Label almış okul. Adı, etkinlik kayıtlarındaki gibi (tam resmî adıyla) yazın.");
+  sayfa.setFrozenRows(1);
+  const satir = sayfa.getMaxRows() - 1;
+  const liste = (degerListesi) => SpreadsheetApp.newDataValidation()
+    .requireValueInList(degerListesi, true).setAllowInvalid(false).build();
+  sayfa.getRange(2, 1, satir, 1).setDataValidation(liste(AYARLAR.ilceler));
+  sayfa.getRange(2, 3, satir, 1).setDataValidation(liste(degerler(ETIKET_TURU)));
+  sayfa.getRange(2, 4, satir, 1).setDataValidation(SpreadsheetApp.newDataValidation()
+    .requireNumberBetween(2000, 2100).setHelpText("Etiketin alındığı yıl, ör. 2025").setAllowInvalid(false).build());
+  sayfa.setColumnWidth(2, 320);
+  return true;
+}
 
 function aydinlatmaMetni() {
   return [
@@ -724,6 +828,7 @@ function kurulum() {
     if (s.getName() !== YANIT_SAYFASI && s.getLastRow() === 0 && ss.getSheets().length > 1) ss.deleteSheet(s);
   });
 
+  etiketSayfasiKur();
   tetikleyicileriKur();
   ozetiYenile();
   Logger.log("Kurulum tamam.");
@@ -786,6 +891,7 @@ function formuYenidenKur() {
 //   - "Anasınıfı" seçeneği "Okul öncesi" olur,
 //   - şube soruları çok seçimli olur,
 //   - "Etkinlik tarihi" "Başlangıç tarihi" olur, isteğe bağlı "Bitiş tarihi" eklenir,
+//   - STEM School Label için "Etiketler" sayfası kurulur,
 //   - açıklama ve yardım metinleri yenilenir, tetikleyiciler yeniden kurulur.
 // Tür değiştirilemeyen sorular (tek seçim → işaret kutusu) aynı yerde yenisiyle
 // değiştirilir; eski cevaplar Sheets'teki eski sütunda kalır ve okunmaya devam
@@ -876,6 +982,8 @@ function formuGuncelle() {
     const oge = ogeBul(form, baslik, T.TEXT);
     if (oge) oge.asTextItem().setHelpText(SAYI_NOTU);
   });
+
+  if (etiketSayfasiKur()) yapilan.push(`"${ETIKET_SAYFASI}" sayfası`);
 
   tetikleyicileriKur();
   onbellegiTemizle();
