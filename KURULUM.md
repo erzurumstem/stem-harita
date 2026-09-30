@@ -201,8 +201,8 @@ Birkaç dakika sonra siteniz güncellenir.
   elle yenilemek için **STEM Harita → Özeti şimdi yenile**.
 - **STEM School Label okulları:** **Etiketler** sayfasına her okul için bir
   satır ekleyin: ilçe (açılır liste), okulun tam resmî adı, tür (Competent /
-  Proficient / Expert) ve yıl. Okul haritada yıldızla görünür; etkinliği
-  varsa yıldız etkinliklerinin yanında durur. Özet sayfasındaki
+  Proficient / Expert) ve yıl. Okul haritada madalya rozetiyle görünür; etkinliği
+  varsa rozet etkinliklerinin yanında durur. Özet sayfasındaki
   **"Etiketli okullar"** tablosunda "Onaylı etkinlik" 0 görünüyorsa ve okulun
   etkinliği olduğunu biliyorsanız adı etkinlik kayıtlarındaki gibi yazın.
 
