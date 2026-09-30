@@ -19,23 +19,27 @@ const YEREL_MI = /^(localhost|127\.0\.0\.1|10\.\d+\.\d+\.\d+|192\.168\.\d+\.\d+|
 
 // Veride yalnızca kod bulunur, ekranda yalnızca etiket gösterilir.
 const SOZLUK = {
+  // İşaretçi rengi YALNIZCA kapsama göre belirlenir (Okabe-Ito, renk
+  // körlüğüne uygun). Sarı iğne açık zeminde seçilsin diye koyu kenarlıdır.
   kapsam: {
-    bagimsiz: "Okul içi / bağımsız",
-    tubitak: "TÜBİTAK",
-    etwinning: "eTwinning",
-    teknofest: "Teknofest",
-    codeweek: "EU Code Week",
-    erasmus: "Erasmus+",
-    diger: "Diğer program"
+    bagimsiz: { etiket: "Okul içi / bağımsız", renk: "#0072B2" },
+    tubitak: { etiket: "TÜBİTAK", renk: "#D55E00" },
+    etwinning: { etiket: "eTwinning", renk: "#56B4E9" },
+    teknofest: { etiket: "Teknofest", renk: "#E69F00" },
+    codeweek: { etiket: "EU Code Week", renk: "#009E73" },
+    erasmus: { etiket: "Erasmus+", renk: "#CC79A7" },
+    harezmi: { etiket: "Harezmi Eğitim Modeli", renk: "#F0E442", kenar: "#6b6400" },
+    diger: { etiket: "Diğer program", renk: "#7F7F7F" }
   },
+  // Birden çok içerik seçilebilir; veride kod listesi olarak gelir.
   icerik: {
-    kodlama: { etiket: "Kodlama ve Algoritma", renk: "#0072B2" },
-    robotik: { etiket: "Robotik ve Elektronik", renk: "#D55E00" },
-    tasarim: { etiket: "Tasarım ve Üretim", renk: "#E69F00" },
-    fen: { etiket: "Fen Deneyi ve Gözlem", renk: "#009E73" },
-    yapayzeka: { etiket: "Yapay Zekâ ve Veri", renk: "#CC79A7" },
-    unplugged: { etiket: "Bilgisayarsız Etkinlik", renk: "#56B4E9" },
-    diger: { etiket: "Diğer", renk: "#7F7F7F" }
+    kodlama: "Kodlama ve Algoritma",
+    robotik: "Robotik ve Elektronik",
+    tasarim: "Tasarım ve Üretim",
+    fen: "Fen Deneyi ve Gözlem",
+    yapayzeka: "Yapay Zekâ ve Veri",
+    unplugged: "Bilgisayarsız Etkinlik",
+    diger: "Diğer STEM etkinlikleri"
   },
   sinifDuzeyi: {
     okuloncesi: "Okul Öncesi",
@@ -270,13 +274,20 @@ function kayitlariDogrula(hamKayitlar, ilceAdlari) {
     const anahtar = okulAnahtari(okulAdi, ilce);
 
     let kapsam = metin(ham.kapsam);
-    if (!(kapsam in SOZLUK.kapsam)) { uyar(`tanımsız kapsam "${kapsam}", Diğer sayıldı.`); kapsam = "diger"; }
+    if (!Object.hasOwn(SOZLUK.kapsam, kapsam)) { uyar(`tanımsız kapsam "${kapsam}", Diğer sayıldı.`); kapsam = "diger"; }
 
-    let icerik = metin(ham.icerik);
-    if (!(icerik in SOZLUK.icerik)) { uyar(`tanımsız içerik "${icerik}", Diğer sayıldı.`); icerik = "diger"; }
+    // Eski kayıtlarda içerik tek bir koddur; yenilerde kod listesidir.
+    const icerikKodlari = (Array.isArray(ham.icerik) ? ham.icerik : [ham.icerik]).map(metin);
+    const icerikSecili = new Set();
+    for (const kod of icerikKodlari) {
+      if (Object.hasOwn(SOZLUK.icerik, kod)) icerikSecili.add(kod);
+      else { uyar(`tanımsız içerik "${kod}", Diğer sayıldı.`); icerikSecili.add("diger"); }
+    }
+    if (!icerikSecili.size) icerikSecili.add("diger");
+    const icerik = Object.keys(SOZLUK.icerik).filter((kod) => icerikSecili.has(kod));
 
     let sinifDuzeyi = metin(ham.sinifDuzeyi);
-    if (!(sinifDuzeyi in SOZLUK.sinifDuzeyi)) { uyar(`tanımsız sınıf düzeyi "${sinifDuzeyi}", "—" gösterilecek.`); sinifDuzeyi = null; }
+    if (!Object.hasOwn(SOZLUK.sinifDuzeyi, sinifDuzeyi)) { uyar(`tanımsız sınıf düzeyi "${sinifDuzeyi}", "—" gösterilecek.`); sinifDuzeyi = null; }
 
     const kizSayisi = sayi(ham.kizSayisi);
     const erkekSayisi = sayi(ham.erkekSayisi);
@@ -441,15 +452,15 @@ function el(etiket, sinif, metinIcerik) {
 
 // Google Maps tarzı damla iğne. Renk yalnızca SOZLUK'tan gelir, veriden değil.
 const pinIkonlari = new Map();
-function pinIkonu(icerik, secili) {
-  const anahtar = `${icerik}|${secili ? 1 : 0}`;
+function pinIkonu(kapsam, secili) {
+  const anahtar = `${kapsam}|${secili ? 1 : 0}`;
   if (!pinIkonlari.has(anahtar)) {
-    const renk = SOZLUK.icerik[icerik].renk;
+    const { renk, kenar = "#fff" } = SOZLUK.kapsam[kapsam];
     pinIkonlari.set(anahtar, L.divIcon({
       className: secili ? "pin pin-secili" : "pin",
       html: `<svg viewBox="0 0 30 42" width="30" height="42" aria-hidden="true">
         <path d="M15 1C7.3 1 1 7.2 1 14.9c0 10.4 12.2 24.9 13.3 26.2a.9.9 0 0 0 1.4 0C16.8 39.8 29 25.3 29 14.9 29 7.2 22.7 1 15 1z"
-              fill="${renk}" stroke="#fff" stroke-width="2"/>
+              fill="${renk}" stroke="${kenar}" stroke-width="2"/>
         <circle cx="15" cy="15" r="5.5" fill="#fff"/></svg>`,
       iconSize: [30, 42],
       iconAnchor: [15, 41],
@@ -527,7 +538,7 @@ function isaretcileriCiz(harita, kayitlar, ilceGeolari, detay) {
     isaretci.ikonuYenile = () => {
       const secili = detay.seciliId() === kayit.id;
       const igne = secili || isaretci.acik;
-      isaretci.setIcon(igne ? pinIkonu(kayit.icerik, secili) : kumeIkonu(1));
+      isaretci.setIcon(igne ? pinIkonu(kayit.kapsam, secili) : kumeIkonu(1));
       isaretci.setTooltipContent(igne ? pinIpucu(kayit) : metinDugumu(kumeIpucu([kayit])));
       etiketle();
     };
@@ -584,12 +595,12 @@ function detayPaneliKur(harita, tumKayitlar) {
 
   function doldur(kayit) {
     icerik.replaceChildren();
-    const tur = SOZLUK.icerik[kayit.icerik];
+    const program = SOZLUK.kapsam[kayit.kapsam];
 
     const rozet = el("span", "rozet");
     const renk = el("span", "rozet-renk");
-    renk.style.backgroundColor = tur.renk;
-    rozet.append(renk, document.createTextNode(tur.etiket));
+    renk.style.backgroundColor = program.renk;
+    rozet.append(renk, document.createTextNode(program.etiket));
 
     const baslik = el("h2", "detay-baslik", kayit.etkinlikAdi);
     baslik.id = "detay-baslik";
@@ -597,7 +608,8 @@ function detayPaneliKur(harita, tumKayitlar) {
 
     const bilgiler = el("dl", "bilgiler");
     bilgiSatiri(bilgiler, "Tarih", tarihYaz(kayit.tarih));
-    bilgiSatiri(bilgiler, "Kapsam", SOZLUK.kapsam[kayit.kapsam]);
+    bilgiSatiri(bilgiler, kayit.icerik.length > 1 ? "Etkinlik türleri" : "Etkinlik türü",
+      kayit.icerik.map((kod) => SOZLUK.icerik[kod]).join(", "));
     bilgiSatiri(bilgiler, "Sınıf düzeyi", kayit.sinifDuzeyi ? SOZLUK.sinifDuzeyi[kayit.sinifDuzeyi] : "—");
     if (kayit.ogretmenAdi) bilgiSatiri(bilgiler, "Öğretmen", kayit.ogretmenAdi);
 
@@ -634,7 +646,7 @@ function detayPaneliKur(harita, tumKayitlar) {
         const dugme = el("button", "diger-dugme");
         dugme.type = "button";
         const renkNoktasi = el("span", "rozet-renk");
-        renkNoktasi.style.backgroundColor = SOZLUK.icerik[k.icerik].renk;
+        renkNoktasi.style.backgroundColor = SOZLUK.kapsam[k.kapsam].renk;
         dugme.append(renkNoktasi, el("span", "diger-ad", k.etkinlikAdi), el("span", "diger-tarih", tarihYaz(k.tarih)));
         dugme.addEventListener("click", () => ac(k));
         const oge = el("li");
@@ -688,20 +700,20 @@ function detayPaneliKur(harita, tumKayitlar) {
 }
 
 // ---------------------------------------------------------------------------
-// Lejant: içerik türlerinin renkleri.
+// Lejant: programların (kapsamın) renkleri.
 
 function lejantEkle(harita) {
   const lejant = L.control({ position: "topright" });
   lejant.onAdd = () => {
     const kutu = el("details", "lejant");
     if (window.matchMedia("(min-width: 768px)").matches) kutu.open = true;
-    kutu.append(el("summary", "", "Etkinlik türleri"));
+    kutu.append(el("summary", "", "Programlar"));
     const liste = el("ul");
-    for (const tur of Object.values(SOZLUK.icerik)) {
+    for (const program of Object.values(SOZLUK.kapsam)) {
       const oge = el("li");
       const renk = el("span", "rozet-renk");
-      renk.style.backgroundColor = tur.renk;
-      oge.append(renk, document.createTextNode(tur.etiket));
+      renk.style.backgroundColor = program.renk;
+      oge.append(renk, document.createTextNode(program.etiket));
       liste.append(oge);
     }
     kutu.append(liste);

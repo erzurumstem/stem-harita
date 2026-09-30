@@ -6,6 +6,8 @@
 // Görevleri:
 //   kurulum()        Bir kez çalıştırılır: formu oluşturur, Sheets'e bağlar,
 //                    Onay sütununu ve Özet sayfasını ekler, tetikleyicileri kurar.
+//   formuGuncelle()  Eski yapıdaki formu yerinde yeni yapıya getirir (form
+//                    adresi ve mevcut yanıtlar korunur).
 //   doGet()          Web uygulaması: siteye YALNIZCA onaylı kayıtların izin
 //                    verilen alanlarını JSON olarak verir.
 //   ozetiYenile()    Yalnızca yöneticinin gördüğü Özet sayfasını hesaplar.
@@ -23,16 +25,24 @@ const SORU = {
   ad: "Adınız ve soyadınız",
   etkinlik: "Etkinlik adı",
   kapsam: "Etkinlik hangi program kapsamında yapıldı?",
-  icerik: "Etkinlikte ne yapıldı?",
+  icerik: "Etkinlikte neler yapıldı?",
   sinif: "Sınıf",
-  sube: "Şube",
-  sube1112: "Şube (11. ve 12. sınıf)",
+  sube: "Şubeler",
+  sube1112: "Şubeler (11. ve 12. sınıf)",
   tarih: "Etkinlik tarihi",
   kiz: "Katılan kız öğrenci sayısı",
   erkek: "Katılan erkek öğrenci sayısı",
   aciklama: "Kısa açıklama",
   aydinlatma: "Aydınlatma metni",
   riza: "Açık rıza"
+};
+// Tek seçimli eski soruların başlıkları. Eski yanıtlar bu sütunlarda kalır;
+// yeni sütun boşsa buradan okunur. (Aynı başlık kullanılsaydı Sheets'te iki
+// sütun aynı adı taşırdı.)
+const SORU_ESKI = {
+  icerik: "Etkinlikte ne yapıldı?",
+  sube: "Şube",
+  sube1112: "Şube (11. ve 12. sınıf)"
 };
 const ONAY_SUTUNU = "Onay";
 const YANIT_SAYFASI = "Yanıtlar";
@@ -48,6 +58,7 @@ const KAPSAM = {
   teknofest: "Teknofest",
   codeweek: "EU Code Week",
   erasmus: "Erasmus+",
+  harezmi: "Harezmi Eğitim Modeli",
   diger: "Diğer program"
 };
 const ICERIK = {
@@ -57,7 +68,7 @@ const ICERIK = {
   fen: "Fen Deneyi ve Gözlem",
   yapayzeka: "Yapay Zekâ ve Veri",
   unplugged: "Bilgisayarsız Etkinlik",
-  diger: "Diğer"
+  diger: "Diğer STEM etkinlikleri"
 };
 const SINIF_DUZEYI = {
   okuloncesi: "Okul Öncesi",
@@ -66,7 +77,9 @@ const SINIF_DUZEYI = {
   "9-12": "Lise (9-12)",
   karma: "Karma"
 };
-const SINIFLAR = ["Anasınıfı"]
+const OKUL_ONCESI = "Okul öncesi";
+const ESKI_OKUL_ONCESI = "Anasınıfı";   // eski yanıtlarda bu yazar
+const SINIFLAR = [OKUL_ONCESI]
   .concat(Array.from({ length: 12 }, (_, i) => `${i + 1}. sınıf`))
   .concat(["Kulüp / karma grup"]);
 const KULUP = "Kulüp / karma grup";
@@ -120,15 +133,30 @@ function sadelestir(metin) {
     .trim();
 }
 
+function degerler(sozluk) {
+  return Object.keys(sozluk).map((kod) => sozluk[kod]);
+}
+
+// Çok seçimli (işaret kutusu) cevap Sheets'te "A, B" biçiminde durur.
+// Seçenek etiketlerinde virgül bulunmaz.
+function coklu(deger) {
+  return temizle(deger).split(/\s*,\s*/).filter(Boolean);
+}
+
+// Yeni sütun boşsa eski (tek seçimli) sorunun sütunundan okur.
+function cevap(satir, alan) {
+  return temizle(satir[SORU[alan]]) || (SORU_ESKI[alan] ? temizle(satir[SORU_ESKI[alan]]) : "");
+}
+
 function tersSozluk(sozluk) {
   const ters = {};
   Object.keys(sozluk).forEach((kod) => { ters[sozluk[kod]] = kod; });
   return ters;
 }
 
-// "Anasınıfı" → okuloncesi, "3. sınıf" → 1-4, "Kulüp / karma grup" → karma
+// "Okul öncesi" → okuloncesi, "3. sınıf" → 1-4, "Kulüp / karma grup" → karma
 function sinifDuzeyiBul(sinif) {
-  if (sinif === "Anasınıfı") return "okuloncesi";
+  if (sinif === OKUL_ONCESI) return "okuloncesi";
   if (sinif === KULUP) return "karma";
   const no = parseInt(sinif, 10);
   if (no >= 1 && no <= 4) return "1-4";
@@ -174,9 +202,16 @@ function satirlariOku() {
 // Bir yanıt satırından iç kullanım kaydı üretir (tam ad dahil; DIŞARI VERİLMEZ).
 function kayitOlustur(satir, saatDilimi) {
   const kapsamKodu = tersSozluk(KAPSAM)[temizle(satir[SORU.kapsam])] || "diger";
-  const icerikKodu = tersSozluk(ICERIK)[temizle(satir[SORU.icerik])] || "diger";
-  const sinif = temizle(satir[SORU.sinif]);
-  const sube = temizle(satir[SORU.sube]) || temizle(satir[SORU.sube1112]);
+  // Birden çok içerik seçilebilir; tanınmayan etiket (ör. eski "Diğer") → diger.
+  const icerikEtiketten = tersSozluk(ICERIK);
+  const secilenIcerik = coklu(cevap(satir, "icerik")).map((e) => icerikEtiketten[e] || "diger");
+  const icerikKodlari = Object.keys(ICERIK).filter((kod) => secilenIcerik.includes(kod));
+  if (!icerikKodlari.length) icerikKodlari.push("diger");
+  const sinifHam = temizle(satir[SORU.sinif]);
+  const sinif = sinifHam === ESKI_OKUL_ONCESI ? OKUL_ONCESI : sinifHam;
+  const subeler = coklu(cevap(satir, "sube") || cevap(satir, "sube1112"));
+  const kizSayisi = sayiyaCevir(satir[SORU.kiz]);
+  const erkekSayisi = sayiyaCevir(satir[SORU.erkek]);
   const okulAdi = temizle(satir[SORU.okul]);
   const ilce = temizle(satir[SORU.ilce]);
   const tamAd = temizle(satir[SORU.ad]);
@@ -187,10 +222,16 @@ function kayitOlustur(satir, saatDilimi) {
 
   const okulAnahtari = `${sadelestir(okulAdi)}|${ilce}`;
   const ogretmenAnahtari = `${okulAnahtari}|${sadelestir(tamAd)}`;
+  // Öğrenci grubu = okul + sınıf + şube. Birden çok şubeli kayıtta sayılar
+  // şubelere EŞİT paylaştırılır (şube başına sayı sorulmadığı için yaklaşık).
   const kulupMu = sinif === KULUP;
-  const grupAnahtari = kulupMu
-    ? `${okulAnahtari}|kulüp|${sadelestir(tamAd)}`
-    : `${okulAnahtari}|${sinif}|${sube}`;
+  const gruplar = kulupMu
+    ? [{ anahtar: `${okulAnahtari}|kulüp|${sadelestir(tamAd)}`, kiz: kizSayisi, erkek: erkekSayisi }]
+    : (subeler.length ? subeler : [""]).map((sube, _, liste) => ({
+        anahtar: `${okulAnahtari}|${sinif}|${sube}`,
+        kiz: kizSayisi / liste.length,
+        erkek: erkekSayisi / liste.length
+      }));
 
   return {
     id: `${AYARLAR.idOnEki}-${satir.zaman.getTime()}`,
@@ -199,18 +240,18 @@ function kayitOlustur(satir, saatDilimi) {
     ilce,
     etkinlikAdi: temizle(satir[SORU.etkinlik]),
     kapsam: kapsamKodu,
-    icerik: icerikKodu,
+    icerik: icerikKodlari,
     sinifDuzeyi: sinifDuzeyiBul(sinif),
     tarih,
-    kizSayisi: sayiyaCevir(satir[SORU.kiz]),
-    erkekSayisi: sayiyaCevir(satir[SORU.erkek]),
+    kizSayisi,
+    erkekSayisi,
     aciklama: temizle(satir[SORU.aciklama]),
     ogretmenAdi: adiKisalt(tamAd),
     // Yalnızca Özet sayfası için:
     satirNo: satir.satirNo,
     okulAnahtari,
     ogretmenAnahtari,
-    grupAnahtari
+    gruplar
   };
 }
 
@@ -264,6 +305,7 @@ function onbellegiTemizle() {
 
 // Tekrarsız sayım: okul, öğretmen (okul + tam ad) ve öğrenci grubu (okul +
 // sınıf + şube) birer kez sayılır; grubun kız/erkek sayısı en yüksek değerdir.
+// Şubelere paylaştırılan sayılar küsuratlı olabilir; toplam yuvarlanır.
 function istatistik(kayitlar) {
   const okullar = new Set();
   const ogretmenler = new Set();
@@ -271,14 +313,18 @@ function istatistik(kayitlar) {
   kayitlar.forEach((k) => {
     okullar.add(k.okulAnahtari);
     ogretmenler.add(k.ogretmenAnahtari);
-    const g = gruplar[k.grupAnahtari] || { kiz: 0, erkek: 0 };
-    g.kiz = Math.max(g.kiz, k.kizSayisi);
-    g.erkek = Math.max(g.erkek, k.erkekSayisi);
-    gruplar[k.grupAnahtari] = g;
+    k.gruplar.forEach((kg) => {
+      const g = gruplar[kg.anahtar] || { kiz: 0, erkek: 0 };
+      g.kiz = Math.max(g.kiz, kg.kiz);
+      g.erkek = Math.max(g.erkek, kg.erkek);
+      gruplar[kg.anahtar] = g;
+    });
   });
   let kiz = 0;
   let erkek = 0;
   Object.keys(gruplar).forEach((a) => { kiz += gruplar[a].kiz; erkek += gruplar[a].erkek; });
+  kiz = Math.round(kiz);
+  erkek = Math.round(erkek);
   return { etkinlik: kayitlar.length, okul: okullar.size, ogretmen: ogretmenler.size, kiz, erkek, ogrenci: kiz + erkek };
 }
 
@@ -289,9 +335,12 @@ function ozetCumlesi(o) {
 }
 
 // Kayıtları bir alana göre gruplayıp her grup için istatistik satırı üretir.
+// Alan liste ise (içerik) kayıt, listedeki her değerin grubuna girer.
 function kirilim(kayitlar, alan, etiketler) {
   const gruplar = {};
-  kayitlar.forEach((k) => { (gruplar[k[alan]] = gruplar[k[alan]] || []).push(k); });
+  kayitlar.forEach((k) => {
+    [].concat(k[alan]).forEach((d) => { (gruplar[d] = gruplar[d] || []).push(k); });
+  });
   const anahtarlar = etiketler ? Object.keys(etiketler) : Object.keys(gruplar).sort((a, b) => a.localeCompare(b, "tr"));
   return anahtarlar
     .filter((a) => gruplar[a])
@@ -375,6 +424,7 @@ function ozetiYenile() {
 
   bolum("İl geneli (yalnızca onaylı kayıtlar)");
   satirlar.push([onayli.length ? ozetCumlesi(istatistik(onayli)) : "Henüz onaylı kayıt yok."]);
+  satirlar.push(["Not: Birden fazla şubeyle girilen kayıtlarda öğrenci sayısı şubelere eşit paylaştırılarak sayılır; \"farklı öğrenci\" sayısı bu yüzden yaklaşıktır."]);
 
   const sutunlar = (ilk) => [ilk, "Etkinlik", "Okul", "Öğretmen", "Kız", "Erkek", "Farklı öğrenci"];
   bolum("İlçelere göre");
@@ -383,6 +433,7 @@ function ozetiYenile() {
   tablo(sutunlar("Kapsam"), kirilim(onayli, "kapsam", KAPSAM));
   bolum("İçerik türüne göre");
   tablo(sutunlar("İçerik türü"), kirilim(onayli, "icerik", ICERIK));
+  satirlar.push(["Not: Bir etkinlikte birden çok tür seçilebildiği için bu tablonun toplamı il genelini aşabilir."]);
   bolum("Sınıf düzeyine göre");
   tablo(sutunlar("Sınıf düzeyi"), kirilim(onayli, "sinifDuzeyi", SINIF_DUZEYI));
 
@@ -508,13 +559,42 @@ function aydinlatmaMetni() {
   ].join("\n");
 }
 
+// Aşağıdaki parçalar hem yeni form kurulurken (formuOlustur) hem de eski
+// form yerinde güncellenirken (formuGuncelle) kullanılır.
+
+function formAciklamasi() {
+  return `${AYARLAR.il} ilinde düzenlediğiniz STEM etkinliğini haritaya eklemek için bu formu doldurunuz. ` +
+    "Her etkinlik için ayrı kayıt giriniz; aynı etkinliği birden fazla şubeyle yaptıysanız şubelerin hepsini " +
+    "tek kayıtta işaretleyebilirsiniz. Kaydınız incelendikten sonra haritada görünür.";
+}
+
+const SUBE_NOTU = "Etkinliği aynı sınıfın birden fazla şubesiyle yaptıysanız hepsini işaretleyiniz. " +
+  "Öğrenci sayılarına seçtiğiniz şubelerin toplamını yazınız.";
+const SAYI_NOTU = "Birden fazla şube seçtiyseniz tüm şubelerin toplamını yazınız.";
+
+function icerikSorusuEkle(form) {
+  return form.addCheckboxItem().setTitle(SORU.icerik)
+    .setHelpText("Birden fazla seçebilirsiniz.")
+    .setChoiceValues(degerler(ICERIK)).setRequired(true);
+}
+
+function subeSorusuEkle(form) {
+  return form.addCheckboxItem().setTitle(SORU.sube)
+    .setHelpText(SUBE_NOTU)
+    .setChoiceValues(SUBELER).setRequired(true);
+}
+
+function sube1112SorusuEkle(form) {
+  return form.addCheckboxItem().setTitle(SORU.sube1112)
+    .setHelpText("Alan ayrımı olan sınıflarda alanı ve şubeyi seçiniz (ör. Sayısal A). " +
+      "Alan ayrımı yoksa yalnızca şube harfini seçiniz. " + SUBE_NOTU)
+    .setChoiceValues(SUBELER_1112).setRequired(true);
+}
+
 function formuOlustur() {
   const form = FormApp.create(`${AYARLAR.il} STEM Etkinlik Haritası ${AYARLAR.donem} — Etkinlik Kaydı`);
   form
-    .setDescription(
-      `${AYARLAR.il} ilinde düzenlediğiniz STEM etkinliğini haritaya eklemek için bu formu doldurunuz. ` +
-      "Her etkinlik ve her şube için ayrı kayıt giriniz. Kaydınız incelendikten sonra haritada görünür."
-    )
+    .setDescription(formAciklamasi())
     .setCollectEmail(false)
     .setAllowResponseEdits(false)
     .setPublishingSummary(false)       // Yanıt özetleri doldurana GÖSTERİLMEZ.
@@ -538,21 +618,16 @@ function formuOlustur() {
       .setHelpText("En fazla 100 karakter.")
       .requireTextLengthLessThanOrEqualTo(100).build());
   form.addMultipleChoiceItem().setTitle(SORU.kapsam)
-    .setChoiceValues(Object.keys(KAPSAM).map((k) => KAPSAM[k])).setRequired(true);
-  form.addMultipleChoiceItem().setTitle(SORU.icerik)
-    .setChoiceValues(Object.keys(ICERIK).map((k) => ICERIK[k])).setRequired(true);
+    .setChoiceValues(degerler(KAPSAM)).setRequired(true);
+  icerikSorusuEkle(form);
   const sinifSorusu = form.addListItem().setTitle(SORU.sinif).setRequired(true)
     .setHelpText("Kulüp veya farklı sınıflardan öğrencilerle yaptıysanız \"" + KULUP + "\" seçiniz.");
 
   // Sınıfa göre dallanma: 11-12 → alanlı şube sayfası; kulüp → şube sorulmaz.
   const subeSayfasi = form.addPageBreakItem().setTitle("Şube");
-  form.addListItem().setTitle(SORU.sube)
-    .setHelpText("Etkinliği birden fazla şubeyle yaptıysanız her şube için ayrı kayıt giriniz.")
-    .setChoiceValues(SUBELER).setRequired(true);
+  subeSorusuEkle(form);
   const sube1112Sayfasi = form.addPageBreakItem().setTitle("Şube (11. ve 12. sınıf)");
-  form.addListItem().setTitle(SORU.sube1112)
-    .setHelpText("Alan ayrımı olan sınıflarda alanı ve şubeyi seçiniz (ör. Sayısal A). Alan ayrımı yoksa yalnızca şube harfini seçiniz. Birden fazla şubeyle yaptıysanız her şube için ayrı kayıt giriniz.")
-    .setChoiceValues(SUBELER_1112).setRequired(true);
+  sube1112SorusuEkle(form);
   const sonSayfa = form.addPageBreakItem().setTitle("Etkinlik ayrıntıları");
   sube1112Sayfasi.setGoToPage(sonSayfa);   // "Şube" sayfasından sonra 11-12 sayfası atlanır.
   sinifSorusu.setChoices(SINIFLAR.map((sinif) => {
@@ -563,8 +638,8 @@ function formuOlustur() {
   }));
 
   form.addDateItem().setTitle(SORU.tarih).setRequired(true);
-  form.addTextItem().setTitle(SORU.kiz).setRequired(true).setValidation(sayiDogrulama);
-  form.addTextItem().setTitle(SORU.erkek).setRequired(true).setValidation(sayiDogrulama);
+  form.addTextItem().setTitle(SORU.kiz).setHelpText(SAYI_NOTU).setRequired(true).setValidation(sayiDogrulama);
+  form.addTextItem().setTitle(SORU.erkek).setHelpText(SAYI_NOTU).setRequired(true).setValidation(sayiDogrulama);
   form.addParagraphTextItem().setTitle(SORU.aciklama)
     .setHelpText("En fazla 300 karakter. Öğrenci adı yazmayınız. Fotoğraf veya bağlantı eklemeyiniz.")
     .setRequired(false)
@@ -675,4 +750,100 @@ function formuYenidenKur() {
   ozetiYenile();
   Logger.log("Form yeniden kuruldu. Eski yanıtlar ayrı bir sayfada saklandı; kontrol edip silebilirsiniz.");
   kurulumSonuMesaji(form);
+}
+
+// ---------------------------------------------------------------------------
+// Formu yerinde güncelleme (Ekim 2026 değişiklikleri)
+//
+// formuYenidenKur() yeni bir form açar: form adresi değişir ve eski yanıtlar
+// "Eski yanıtlar" sayfasına taşınıp siteden düşer. Bu işlev ise MEVCUT formu
+// değiştirir; form adresi ve yanıtlar olduğu gibi kalır:
+//   - kapsama "Harezmi Eğitim Modeli" eklenir,
+//   - "Etkinlikte ne yapıldı?" çok seçimli "Etkinlikte neler yapıldı?" olur,
+//   - "Anasınıfı" seçeneği "Okul öncesi" olur,
+//   - şube soruları çok seçimli olur,
+//   - açıklama ve yardım metinleri yenilenir, tetikleyiciler yeniden kurulur.
+// Tür değiştirilemeyen sorular (tek seçim → işaret kutusu) aynı yerde yenisiyle
+// değiştirilir; eski cevaplar Sheets'teki eski sütunda kalır ve okunmaya devam
+// eder. İki kez çalıştırmak güvenlidir: yapılmış adımlar atlanır.
+
+function ogeBul(form, baslik, tur) {
+  return form.getItems(tur).find((oge) => oge.getTitle() === baslik) || null;
+}
+
+// Eski soruyu siler, yenisini onun yerine (aynı sayfaya) koyar.
+function ogeyiDegistir(form, eski, yeniEkle) {
+  const yer = eski.getIndex();
+  const yeni = yeniEkle(form);
+  form.moveItem(yeni.getIndex(), yer);
+  form.deleteItem(eski);
+}
+
+function formuGuncelle() {
+  const ss = SpreadsheetApp.getActive();
+  const props = PropertiesService.getScriptProperties();
+  const formId = props.getProperty("FORM_ID");
+  if (!formId) throw new Error("Form bulunamadı. Önce kurulum() çalıştırılmalı.");
+  const form = FormApp.openById(formId);
+  const T = FormApp.ItemType;
+  const yapilan = [];
+
+  // Güvenlik için önce yanıtların kopyası alınır (tam adlar içerir; kontrol
+  // ettikten sonra silin).
+  const tarih = Utilities.formatDate(new Date(), ss.getSpreadsheetTimeZone(), "yyyy-MM-dd HH.mm");
+  yanitSayfasi().copyTo(ss).setName(`Yedek yanıtlar ${tarih}`);
+
+  form.setDescription(formAciklamasi());
+
+  const kapsam = ogeBul(form, SORU.kapsam, T.MULTIPLE_CHOICE);
+  if (kapsam) {
+    kapsam.asMultipleChoiceItem().setChoiceValues(degerler(KAPSAM));
+    yapilan.push("kapsam seçenekleri (Harezmi)");
+  } else {
+    Logger.log(`Uyarı: "${SORU.kapsam}" sorusu bulunamadı.`);
+  }
+
+  const icerik = ogeBul(form, SORU_ESKI.icerik, T.MULTIPLE_CHOICE);
+  if (icerik) {
+    ogeyiDegistir(form, icerik, icerikSorusuEkle);
+    yapilan.push("içerik sorusu çok seçimli");
+  }
+
+  const sinifOge = ogeBul(form, SORU.sinif, T.LIST);
+  if (sinifOge) {
+    const sinif = sinifOge.asListItem();
+    const secenekler = sinif.getChoices();
+    if (secenekler.some((c) => c.getValue() === ESKI_OKUL_ONCESI)) {
+      sinif.setChoices(secenekler.map((c) => {
+        const deger = c.getValue() === ESKI_OKUL_ONCESI ? OKUL_ONCESI : c.getValue();
+        const hedef = c.getGotoPage();
+        return hedef ? sinif.createChoice(deger, hedef) : sinif.createChoice(deger, c.getPageNavigationType());
+      }));
+      yapilan.push(`"${ESKI_OKUL_ONCESI}" → "${OKUL_ONCESI}"`);
+    }
+  } else {
+    Logger.log(`Uyarı: "${SORU.sinif}" sorusu bulunamadı.`);
+  }
+
+  const sube = ogeBul(form, SORU_ESKI.sube, T.LIST);
+  if (sube) {
+    ogeyiDegistir(form, sube, subeSorusuEkle);
+    yapilan.push("şube sorusu çok seçimli");
+  }
+  const sube1112 = ogeBul(form, SORU_ESKI.sube1112, T.LIST);
+  if (sube1112) {
+    ogeyiDegistir(form, sube1112, sube1112SorusuEkle);
+    yapilan.push("11-12 şube sorusu çok seçimli");
+  }
+
+  [SORU.kiz, SORU.erkek].forEach((baslik) => {
+    const oge = ogeBul(form, baslik, T.TEXT);
+    if (oge) oge.asTextItem().setHelpText(SAYI_NOTU);
+  });
+
+  tetikleyicileriKur();
+  onbellegiTemizle();
+  ozetiYenile();
+  Logger.log("Form güncellendi: " + (yapilan.length ? yapilan.join(", ") : "soru değişikliği gerekmedi (daha önce yapılmış)") + ".");
+  Logger.log(`Yanıtların yedeği "Yedek yanıtlar ${tarih}" sayfasında. Kontrol ettikten sonra bu sayfayı silin.`);
 }

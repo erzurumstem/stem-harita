@@ -20,7 +20,10 @@
     "ilce": "Yakutiye",
     "etkinlikAdi": "Arduino ile Trafik Işığı",
     "kapsam": "tubitak",
-    "icerik": "robotik",
+    "icerik": [
+      "robotik",
+      "kodlama"
+    ],
     "sinifDuzeyi": "1-4",
     "tarih": "2026-11-02",
     "kizSayisi": 9,
@@ -35,7 +38,9 @@
     "ilce": "Yakutiye",
     "etkinlikAdi": "3B Yazıcıyla Anahtarlık",
     "kapsam": "etwinning",
-    "icerik": "tasarim",
+    "icerik": [
+      "tasarim"
+    ],
     "sinifDuzeyi": "1-4",
     "tarih": "2026-12-03",
     "kizSayisi": 10,
@@ -49,8 +54,10 @@
     "okulAdi": "Örnek Çınar İlkokulu",
     "ilce": "Yakutiye",
     "etkinlikAdi": "Su Döngüsü Deneyi",
-    "kapsam": "teknofest",
-    "icerik": "fen",
+    "kapsam": "harezmi",
+    "icerik": [
+      "fen"
+    ],
     "sinifDuzeyi": "1-4",
     "tarih": "2026-10-04",
     "kizSayisi": 11,
@@ -65,7 +72,11 @@
     "ilce": "Yakutiye",
     "etkinlikAdi": "Yapay Zekâ ile Görüntü Sınıflandırma",
     "kapsam": "codeweek",
-    "icerik": "yapayzeka",
+    "icerik": [
+      "yapayzeka",
+      "kodlama",
+      "unplugged"
+    ],
     "sinifDuzeyi": "5-8",
     "tarih": "2026-11-05",
     "kizSayisi": 12,
@@ -80,7 +91,9 @@
     "ilce": "Yakutiye",
     "etkinlikAdi": "Bilgisayarsız Kodlama: Robot Oyunu",
     "kapsam": "erasmus",
-    "icerik": "unplugged",
+    "icerik": [
+      "unplugged"
+    ],
     "sinifDuzeyi": "5-8",
     "tarih": "2026-12-06",
     "kizSayisi": 13,
@@ -95,7 +108,9 @@
     "ilce": "Palandöken",
     "etkinlikAdi": "Mikro:bit Adımsayar",
     "kapsam": "diger",
-    "icerik": "diger",
+    "icerik": [
+      "diger"
+    ],
     "sinifDuzeyi": "9-12",
     "tarih": "2026-10-07",
     "kizSayisi": 14,
@@ -110,7 +125,9 @@
     "ilce": "Palandöken",
     "etkinlikAdi": "Köprü Tasarım Yarışması",
     "kapsam": "bagimsiz",
-    "icerik": "kodlama",
+    "icerik": [
+      "kodlama"
+    ],
     "sinifDuzeyi": "9-12",
     "tarih": "2026-11-08",
     "kizSayisi": 15,
@@ -125,7 +142,9 @@
     "ilce": "Palandöken",
     "etkinlikAdi": "Bitki Büyüme Gözlemi",
     "kapsam": "tubitak",
-    "icerik": "robotik",
+    "icerik": [
+      "robotik"
+    ],
     "sinifDuzeyi": "9-12",
     "tarih": "2026-12-09",
     "kizSayisi": 16,
@@ -140,7 +159,10 @@
     "ilce": "Palandöken",
     "etkinlikAdi": "Sensörlerle Hava İstasyonu",
     "kapsam": "etwinning",
-    "icerik": "tasarim",
+    "icerik": [
+      "tasarim",
+      "fen"
+    ],
     "sinifDuzeyi": "1-4",
     "tarih": "2026-10-10",
     "kizSayisi": 8,
@@ -155,7 +177,9 @@
     "ilce": "Aziziye",
     "etkinlikAdi": "Scratch ile Labirent Oyunu",
     "kapsam": "teknofest",
-    "icerik": "fen",
+    "icerik": [
+      "fen"
+    ],
     "sinifDuzeyi": "5-8",
     "tarih": "2026-11-11",
     "kizSayisi": 9,
@@ -170,7 +194,9 @@
     "ilce": "Aziziye",
     "etkinlikAdi": "Arduino ile Trafik Işığı",
     "kapsam": "codeweek",
-    "icerik": "yapayzeka",
+    "icerik": [
+      "yapayzeka"
+    ],
     "sinifDuzeyi": "5-8",
     "tarih": "2026-12-12",
     "kizSayisi": 10,
@@ -184,8 +210,10 @@
     "okulAdi": "Örnek Yıldız İlkokulu",
     "ilce": "Oltu",
     "etkinlikAdi": "3B Yazıcıyla Anahtarlık",
-    "kapsam": "erasmus",
-    "icerik": "unplugged",
+    "kapsam": "harezmi",
+    "icerik": [
+      "unplugged"
+    ],
     "sinifDuzeyi": "1-4",
     "tarih": "2026-10-13",
     "kizSayisi": 11,
@@ -200,7 +228,9 @@
     "ilce": "Oltu",
     "etkinlikAdi": "Su Döngüsü Deneyi",
     "kapsam": "diger",
-    "icerik": "diger",
+    "icerik": [
+      "diger"
+    ],
     "sinifDuzeyi": "1-4",
     "tarih": "2026-11-14",
     "kizSayisi": 12,
@@ -215,7 +245,9 @@
     "ilce": "Horasan",
     "etkinlikAdi": "Yapay Zekâ ile Görüntü Sınıflandırma",
     "kapsam": "bagimsiz",
-    "icerik": "kodlama",
+    "icerik": [
+      "kodlama"
+    ],
     "sinifDuzeyi": "5-8",
     "tarih": "2026-12-15",
     "kizSayisi": 13,
@@ -230,7 +262,9 @@
     "ilce": "Pasinler",
     "etkinlikAdi": "Bilgisayarsız Kodlama: Robot Oyunu",
     "kapsam": "tubitak",
-    "icerik": "robotik",
+    "icerik": [
+      "robotik"
+    ],
     "sinifDuzeyi": "okuloncesi",
     "tarih": "2026-10-16",
     "kizSayisi": 14,
@@ -245,7 +279,10 @@
     "ilce": "Tortum",
     "etkinlikAdi": "Mikro:bit Adımsayar",
     "kapsam": "etwinning",
-    "icerik": "tasarim",
+    "icerik": [
+      "tasarim",
+      "robotik"
+    ],
     "sinifDuzeyi": "9-12",
     "tarih": "2026-11-17",
     "kizSayisi": 15,
@@ -260,7 +297,9 @@
     "ilce": "Tortum",
     "etkinlikAdi": "Köprü Tasarım Yarışması",
     "kapsam": "teknofest",
-    "icerik": "fen",
+    "icerik": [
+      "fen"
+    ],
     "sinifDuzeyi": "9-12",
     "tarih": "2026-12-18",
     "kizSayisi": 16,
@@ -275,7 +314,9 @@
     "ilce": "Tortum",
     "etkinlikAdi": "Bitki Büyüme Gözlemi",
     "kapsam": "codeweek",
-    "icerik": "yapayzeka",
+    "icerik": [
+      "yapayzeka"
+    ],
     "sinifDuzeyi": "9-12",
     "tarih": "2026-10-19",
     "kizSayisi": 8,
@@ -290,7 +331,9 @@
     "ilce": "Hınıs",
     "etkinlikAdi": "Sensörlerle Hava İstasyonu",
     "kapsam": "erasmus",
-    "icerik": "unplugged",
+    "icerik": [
+      "unplugged"
+    ],
     "sinifDuzeyi": "1-4",
     "tarih": "2026-11-20",
     "kizSayisi": 9,
@@ -305,7 +348,9 @@
     "ilce": "İspir",
     "etkinlikAdi": "Scratch ile Labirent Oyunu",
     "kapsam": "diger",
-    "icerik": "diger",
+    "icerik": [
+      "diger"
+    ],
     "sinifDuzeyi": "5-8",
     "tarih": "2026-12-21",
     "kizSayisi": 10,
@@ -319,8 +364,10 @@
     "okulAdi": "Örnek Çağ Ortaokulu",
     "ilce": "İspir",
     "etkinlikAdi": "Arduino ile Trafik Işığı",
-    "kapsam": "bagimsiz",
-    "icerik": "kodlama",
+    "kapsam": "harezmi",
+    "icerik": [
+      "kodlama"
+    ],
     "sinifDuzeyi": "5-8",
     "tarih": "2026-10-22",
     "kizSayisi": 11,
@@ -335,7 +382,9 @@
     "ilce": "Karayazı",
     "etkinlikAdi": "3B Yazıcıyla Anahtarlık",
     "kapsam": "tubitak",
-    "icerik": "robotik",
+    "icerik": [
+      "robotik"
+    ],
     "sinifDuzeyi": "1-4",
     "tarih": "2026-11-23",
     "kizSayisi": 12,
@@ -350,7 +399,9 @@
     "ilce": "Olur",
     "etkinlikAdi": "Su Döngüsü Deneyi",
     "kapsam": "etwinning",
-    "icerik": "tasarim",
+    "icerik": [
+      "tasarim"
+    ],
     "sinifDuzeyi": "5-8",
     "tarih": "2026-12-24",
     "kizSayisi": 13,
@@ -365,7 +416,9 @@
     "ilce": "Çat",
     "etkinlikAdi": "Yapay Zekâ ile Görüntü Sınıflandırma",
     "kapsam": "teknofest",
-    "icerik": "fen",
+    "icerik": [
+      "fen"
+    ],
     "sinifDuzeyi": "1-4",
     "tarih": "2026-10-25",
     "kizSayisi": 14,
@@ -380,7 +433,9 @@
     "ilce": "Çat",
     "etkinlikAdi": "Bilgisayarsız Kodlama: Robot Oyunu",
     "kapsam": "codeweek",
-    "icerik": "yapayzeka",
+    "icerik": [
+      "yapayzeka"
+    ],
     "sinifDuzeyi": "1-4",
     "tarih": "2026-11-26",
     "kizSayisi": 15,
@@ -395,7 +450,9 @@
     "ilce": "Yakutiye",
     "etkinlikAdi": "TEST: onaysız kayıt (görünmemeli)",
     "kapsam": "bagimsiz",
-    "icerik": "kodlama",
+    "icerik": [
+      "kodlama"
+    ],
     "sinifDuzeyi": "1-4",
     "tarih": "2026-10-01",
     "kizSayisi": 8,
@@ -410,7 +467,9 @@
     "ilce": "Askale",
     "etkinlikAdi": "TEST: yanlış ilçe adı (atlanmalı)",
     "kapsam": "bagimsiz",
-    "icerik": "kodlama",
+    "icerik": [
+      "kodlama"
+    ],
     "sinifDuzeyi": "1-4",
     "tarih": "2026-10-01",
     "kizSayisi": 8,
@@ -425,7 +484,9 @@
     "ilce": "Yakutiye",
     "etkinlikAdi": "TEST: dönem dışı tarih (atlanmalı)",
     "kapsam": "bagimsiz",
-    "icerik": "kodlama",
+    "icerik": [
+      "kodlama"
+    ],
     "sinifDuzeyi": "1-4",
     "tarih": "2025-05-10",
     "kizSayisi": 8,
@@ -440,7 +501,9 @@
     "ilce": "Narman",
     "etkinlikAdi": "TEST: boş okul adı (atlanmalı)",
     "kapsam": "bagimsiz",
-    "icerik": "kodlama",
+    "icerik": [
+      "kodlama"
+    ],
     "sinifDuzeyi": "1-4",
     "tarih": "2026-10-01",
     "kizSayisi": 8,
@@ -455,7 +518,9 @@
     "ilce": "Yakutiye",
     "etkinlikAdi": "TEST: uzun açıklama (kırpılmalı)",
     "kapsam": "bagimsiz",
-    "icerik": "kodlama",
+    "icerik": [
+      "kodlama"
+    ],
     "sinifDuzeyi": "1-4",
     "tarih": "2026-10-01",
     "kizSayisi": 8,
@@ -485,7 +550,9 @@
     "ilce": "Yakutiye",
     "etkinlikAdi": "TEST: tanımsız sınıf düzeyi (—)",
     "kapsam": "bagimsiz",
-    "icerik": "kodlama",
+    "icerik": [
+      "kodlama"
+    ],
     "sinifDuzeyi": "13-14",
     "tarih": "2026-10-01",
     "kizSayisi": 8,
@@ -500,7 +567,9 @@
     "ilce": "Yakutiye",
     "etkinlikAdi": "TEST: eksik öğrenci sayısı (0 sayılmalı)",
     "kapsam": "bagimsiz",
-    "icerik": "kodlama",
+    "icerik": [
+      "kodlama"
+    ],
     "sinifDuzeyi": "1-4",
     "tarih": "2026-10-01",
     "erkekSayisi": "on",
@@ -514,7 +583,9 @@
     "ilce": "Yakutiye",
     "etkinlikAdi": "<img src=x onerror=\"alert(1)\"> TEST: XSS (yazı olarak görünmeli)",
     "kapsam": "bagimsiz",
-    "icerik": "kodlama",
+    "icerik": [
+      "kodlama"
+    ],
     "sinifDuzeyi": "1-4",
     "tarih": "2026-10-01",
     "kizSayisi": 8,
@@ -529,7 +600,10 @@
     "ilce": "Aziziye",
     "etkinlikAdi": "IŞIK ve İZ Deneyi (Türkçe arama testi)",
     "kapsam": "bagimsiz",
-    "icerik": "kodlama",
+    "icerik": [
+      "kodlama",
+      "bilinmeyen"
+    ],
     "sinifDuzeyi": "1-4",
     "tarih": "2026-10-01",
     "kizSayisi": 8,
