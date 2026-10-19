@@ -59,6 +59,7 @@ const SOZLUK = {
 const ETIKET_ADI = "STEM School Label";
 
 const ACIKLAMA_SINIRI = 300;
+const GUNLUK_SINIRI = 400;
 const NOKTA_DENEME_SAYISI = 200;
 // Nokta, ilçe sınırına en az (ilçe boyutu × bu oran) uzaklıkta olmalı;
 // yoksa sınır üstündeki nokta "hangi ilçede?" sorusuna yol açar.
@@ -240,10 +241,10 @@ function sayi(deger) {
   return deger === undefined || deger === null || deger === "" || !Number.isFinite(n) ? 0 : n;
 }
 
-function aciklamaKirp(deger) {
+function metniKirp(deger, sinir) {
   const harfler = Array.from(metin(deger));
-  return harfler.length > ACIKLAMA_SINIRI
-    ? harfler.slice(0, ACIKLAMA_SINIRI).join("").trimEnd() + "…"
+  return harfler.length > sinir
+    ? harfler.slice(0, sinir).join("").trimEnd() + "…"
     : harfler.join("");
 }
 
@@ -322,21 +323,22 @@ function kayitlariDogrula(hamKayitlar, ilceAdlari) {
       kizSayisi,
       erkekSayisi,
       toplamOgrenci: kizSayisi + erkekSayisi,
-      aciklama: aciklamaKirp(ham.aciklama),
+      aciklama: metniKirp(ham.aciklama, ACIKLAMA_SINIRI),
       ogretmenAdi: metin(ham.ogretmenAdi)
     });
   }
   return sonuc;
 }
 
-// Uç nokta { etkinlikler, etiketliOkullar } döndürür; eski biçim yalnızca
-// etkinlik listesidir.
+// Uç nokta { etkinlikler, etiketliOkullar, maraton? } döndürür; eski biçim
+// yalnızca etkinlik listesidir. Maraton isteğe bağlıdır (yoksa null).
 function veriyiAyir(ham) {
-  if (Array.isArray(ham)) return { etkinlikler: ham, etiketliOkullar: [] };
+  if (Array.isArray(ham)) return { etkinlikler: ham, etiketliOkullar: [], maraton: null };
   if (!ham || typeof ham !== "object") throw new Error("Veri biçimi tanınmadı.");
   return {
     etkinlikler: ham.etkinlikler,
-    etiketliOkullar: Array.isArray(ham.etiketliOkullar) ? ham.etiketliOkullar : []
+    etiketliOkullar: Array.isArray(ham.etiketliOkullar) ? ham.etiketliOkullar : [],
+    maraton: ham.maraton && typeof ham.maraton === "object" ? ham.maraton : null
   };
 }
 
@@ -357,6 +359,64 @@ function etiketleriDogrula(hamListe, ilceAdlari) {
     if (!sonuc.has(anahtar)) sonuc.set(anahtar, { okulAdi, ilce, okulAnahtari: anahtar, tur, yil });
   }
   return [...sonuc.values()];
+}
+
+// Proje Maratonu ekipleri ve çalışma yazıları. Ekipler okul başına gruplanır
+// (bir okulda birden çok ekip olabilir); yazılar en yeni üstte sıralanır.
+function maratonDogrula(ham, ilceAdlari) {
+  if (!ham) return null;
+  const ad = metin(ham.ad);
+  if (!ad || !Array.isArray(ham.ekipler)) {
+    console.warn("Maraton: ad veya ekip listesi yok, gösterilmeyecek.");
+    return null;
+  }
+  const ekipler = [];
+  const kodlar = new Set();
+  for (const e of ham.ekipler) {
+    if (!e) continue;
+    const kod = metin(e.kod);
+    const okulAdi = metin(e.okulAdi);
+    const ilce = metin(e.ilce);
+    const projeAdi = metin(e.projeAdi);
+    const uyar = (neden) => console.warn(`Maraton ekibi ${kod || "?"}: ${neden}`);
+    if (!kod || kodlar.has(kod)) { uyar("kod boş veya tekrar ediyor, atlandı."); continue; }
+    if (!okulAdi) { uyar("okul adı boş, atlandı."); continue; }
+    if (!ilceAdlari.has(ilce)) { uyar(`ilçe "${ilce}" ilçe listesinde yok, atlandı.`); continue; }
+    if (!projeAdi) { uyar("proje adı boş, atlandı."); continue; }
+    kodlar.add(kod);
+
+    const gunluk = [];
+    for (const g of Array.isArray(e.gunluk) ? e.gunluk : []) {
+      const tarih = metin(g?.tarih);
+      const yazi = metniKirp(g?.metin, GUNLUK_SINIRI);
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(tarih) || isNaN(new Date(`${tarih}T00:00:00`))) { uyar(`yazı tarihi "${tarih}" geçersiz, atlandı.`); continue; }
+      if (!yazi) { uyar("boş yazı atlandı."); continue; }
+      gunluk.push({ tarih, metin: yazi });
+    }
+    gunluk.sort((a, b) => b.tarih.localeCompare(a.tarih));
+
+    const kizSayisi = sayi(e.kizSayisi);
+    const erkekSayisi = sayi(e.erkekSayisi);
+    ekipler.push({
+      kod,
+      okulAdi,
+      ilce,
+      okulAnahtari: okulAnahtari(okulAdi, ilce),
+      projeAdi,
+      tema: metin(e.tema),
+      ogretmenAdi: metin(e.ogretmenAdi),
+      kizSayisi,
+      erkekSayisi,
+      toplamOgrenci: kizSayisi + erkekSayisi,
+      gunluk
+    });
+  }
+  const okullar = new Map();
+  for (const ekip of ekipler) {
+    if (!okullar.has(ekip.okulAnahtari)) okullar.set(ekip.okulAnahtari, []);
+    okullar.get(ekip.okulAnahtari).push(ekip);
+  }
+  return { ad, ekipler, okullar };
 }
 
 // "STEM School Label (Expert, 2025)"
@@ -397,6 +457,12 @@ function gizlilikKur() {
   document.getElementById("gizlilik-kapat").addEventListener("click", () => pencere.close());
   // Pencerenin dışına (arka plana) tıklayınca kapansın.
   pencere.addEventListener("click", (olay) => { if (olay.target === pencere) pencere.close(); });
+}
+
+// Maraton varsa Gizlilik penceresinde onun maddesi de görünür.
+function gizlilikMaratonKur(ad) {
+  document.getElementById("gizlilik-maraton-ad").textContent = ad;
+  document.getElementById("gizlilik-maraton").hidden = false;
 }
 
 // Altlık harita YOKTUR: yalnızca ilçeler çizilir. Böylece dışarıya istek
@@ -574,6 +640,53 @@ function rozetDugumu() {
   return svg;
 }
 
+// Proje Maratonu simgesi: beyaz daire içinde lacivert roket. Rozet gibi
+// sabit parçalardan hem harita simgesi hem lejant/kart düğümü üretilir.
+const MARATON_PARCALARI = [
+  ["circle", { cx: "13", cy: "13", r: "11.8", fill: "#fff", stroke: "#1f3b63", "stroke-width": "1.8" }],
+  ["path", { d: "M13 22.2L10.9 17.4H15.1Z", fill: "#E69F00" }],
+  ["path", { d: "M9.4 13.2L6.8 16.4V18.4L9.4 16.9ZM16.6 13.2L19.2 16.4V18.4L16.6 16.9Z", fill: "#2f5a94" }],
+  ["path", { d: "M13 4.2C15.6 6.4 16.6 9.5 16.6 12.6V17H9.4V12.6C9.4 9.5 10.4 6.4 13 4.2Z", fill: "#1f3b63" }],
+  ["circle", { cx: "13", cy: "10.6", r: "1.8", fill: "#fff" }]
+];
+const MARATON_SVG = '<svg viewBox="0 0 26 26" width="26" height="26" aria-hidden="true">' +
+  MARATON_PARCALARI.map(([etiket, oz]) =>
+    `<${etiket} ${Object.entries(oz).map(([k, v]) => `${k}="${v}"`).join(" ")}/>`).join("") +
+  "</svg>";
+
+// Okulda etkinlik balonu veya rozet varsa simge noktanın sol üst yanına kayar
+// (rozet sağ üsttedir), yoksa noktanın üstünde ortalanır.
+function maratonIkonu(yanaKay) {
+  return L.divIcon({
+    className: "maraton-simgesi",
+    html: MARATON_SVG,
+    iconSize: [26, 26],
+    iconAnchor: yanaKay ? [34, 30] : [13, 13],
+    tooltipAnchor: yanaKay ? [-21, -30] : [0, -13]
+  });
+}
+
+function maratonDugumu() {
+  const ns = "http://www.w3.org/2000/svg";
+  const svg = document.createElementNS(ns, "svg");
+  svg.setAttribute("viewBox", "0 0 26 26");
+  svg.setAttribute("class", "maraton-kucuk");
+  svg.setAttribute("aria-hidden", "true");
+  for (const [etiket, oz] of MARATON_PARCALARI) {
+    const parca = document.createElementNS(ns, etiket);
+    for (const [k, v] of Object.entries(oz)) parca.setAttribute(k, v);
+    svg.append(parca);
+  }
+  return svg;
+}
+
+// "Rüzgârdan Elektrik · Örnek Ortaokulu" / "Örnek Ortaokulu · 2 ekip"
+function maratonOzeti(ekipler) {
+  return ekipler.length === 1
+    ? `${ekipler[0].projeAdi} · ${ekipler[0].okulAdi}`
+    : `${ekipler[0].okulAdi} · ${ekipler.length} ekip`;
+}
+
 function pinIpucu(kayit) {
   const kutu = el("div", "ipucu");
   kutu.append(el("strong", "", kayit.etkinlikAdi), el("span", "", `${kayit.okulAdi} · ${kayit.ilce}`));
@@ -700,15 +813,44 @@ function rozetleriCiz(harita, etiketler, kayitlar, ilceGeolari, detay) {
   katman.addTo(harita);
 }
 
+// Proje Maratonu ekipleri de ayrı katmanda, okul başına TEK simgeyle çizilir.
+function maratonCiz(harita, maraton, kayitlar, etiketler, ilceGeolari, detay) {
+  const doluOkullar = new Set([...kayitlar, ...etiketler].map((k) => k.okulAnahtari));
+  const katman = L.layerGroup();
+  for (const [anahtar, ekipler] of maraton.okullar) {
+    const nokta = temsiliNokta(ilceGeolari.get(ekipler[0].ilce), anahtar);
+    const isaretci = L.marker(nokta, {
+      icon: maratonIkonu(doluOkullar.has(anahtar)),
+      keyboard: true,
+      riseOnHover: true,
+      zIndexOffset: 1000
+    });
+    const ipucu = el("div", "ipucu");
+    ipucu.append(el("strong", "", maraton.ad), el("span", "", maratonOzeti(ekipler)));
+    isaretci.bindTooltip(ipucu, { direction: "top", className: "ipucu-kutu" });
+    isaretci.on("add", () => {
+      const oge = isaretci.getElement();
+      oge.setAttribute("role", "button");
+      oge.setAttribute("aria-label", `${maraton.ad}: ${maratonOzeti(ekipler)}, ${ekipler[0].ilce}. Ayrıntılar için Enter`);
+    });
+    isaretci.on("click", () => detay.maratonAc(anahtar));
+    detay.maratonIsaretcileri.set(anahtar, isaretci);
+    katman.addLayer(isaretci);
+  }
+  katman.addTo(harita);
+}
+
 // ---------------------------------------------------------------------------
 // Detay paneli: masaüstünde sağdan, telefonda alttan açılır.
 
-function detayPaneliKur(harita, tumKayitlar, etiketler) {
+function detayPaneliKur(harita, tumKayitlar, etiketler, maraton) {
   const panel = document.getElementById("detay");
   const icerik = document.getElementById("detay-icerik");
   const kapatDugmesi = document.getElementById("detay-kapat");
   const genisEkran = window.matchMedia("(min-width: 768px)");
   const isaretciler = new Map();
+  const maratonIsaretcileri = new Map();
+  const okulEkipleri = maraton ? maraton.okullar : new Map();
   const okulEtiketi = new Map(etiketler.map((e) => [e.okulAnahtari, e]));
   let secili = null;
 
@@ -719,8 +861,8 @@ function detayPaneliKur(harita, tumKayitlar, etiketler) {
     if (kayit) isaretciler.get(kayit.id)?.ikonuYenile();
   }
 
-  function bilgiSatiri(liste, baslik, deger) {
-    const satir = el("div", "bilgi");
+  function bilgiSatiri(liste, baslik, deger, genis) {
+    const satir = el("div", genis ? "bilgi bilgi-genis" : "bilgi");
     satir.append(el("dt", "", baslik), el("dd", "", deger));
     liste.append(satir);
   }
@@ -736,14 +878,7 @@ function detayPaneliKur(harita, tumKayitlar, etiketler) {
 
     const baslik = el("h2", "detay-baslik", kayit.etkinlikAdi);
     baslik.id = "detay-baslik";
-    const okul = el("p", "detay-okul", `${kayit.okulAdi} · ${kayit.ilce}`);
-    const etiket = okulEtiketi.get(kayit.okulAnahtari);
-    if (etiket) {
-      okul.classList.add("etiketli");
-      const satir = el("span", "detay-etiket");
-      satir.append(rozetDugumu(), document.createTextNode(etiketMetni(etiket)));
-      okul.append(satir);
-    }
+    const okul = okulSatiri(`${kayit.okulAdi} · ${kayit.ilce}`, kayit.okulAnahtari);
 
     const bilgiler = el("dl", "bilgiler");
     bilgiSatiri(bilgiler, "Tarih", tarihYaz(kayit));
@@ -752,24 +887,7 @@ function detayPaneliKur(harita, tumKayitlar, etiketler) {
     bilgiSatiri(bilgiler, "Sınıf düzeyi", kayit.sinifDuzeyi ? SOZLUK.sinifDuzeyi[kayit.sinifDuzeyi] : "—");
     if (kayit.ogretmenAdi) bilgiSatiri(bilgiler, "Öğretmen", kayit.ogretmenAdi);
 
-    const ogrenci = el("div", "ogrenci");
-    const sayi = el("p", "ogrenci-toplam");
-    sayi.append(el("strong", "", String(kayit.toplamOgrenci)), document.createTextNode(" öğrenci katıldı"));
-    ogrenci.append(sayi);
-    if (kayit.toplamOgrenci > 0) {
-      const cubuk = el("div", "ogrenci-cubuk");
-      const kiz = el("span", "cubuk-kiz");
-      kiz.style.width = `${(kayit.kizSayisi / kayit.toplamOgrenci) * 100}%`;
-      cubuk.append(kiz, el("span", "cubuk-erkek"));
-      cubuk.setAttribute("aria-hidden", "true");
-      ogrenci.append(cubuk);
-    }
-    const dagilim = el("p", "ogrenci-dagilim");
-    dagilim.append(el("span", "nokta-kiz"), document.createTextNode(` ${kayit.kizSayisi} kız   `),
-                   el("span", "nokta-erkek"), document.createTextNode(` ${kayit.erkekSayisi} erkek`));
-    ogrenci.append(dagilim);
-
-    icerik.append(rozet, baslik, okul, bilgiler, ogrenci);
+    icerik.append(rozet, baslik, okul, bilgiler, ogrenciBlogu(kayit, " öğrenci katıldı"));
 
     if (kayit.aciklama) {
       icerik.append(el("h3", "", "Açıklama"), el("p", "detay-aciklama", kayit.aciklama));
@@ -779,6 +897,100 @@ function detayPaneliKur(harita, tumKayitlar, etiketler) {
     if (digerleri.length) {
       icerik.append(el("h3", "", "Bu okulun diğer etkinlikleri"), etkinlikListesi(digerleri));
     }
+    maratonBaglantisi(kayit.okulAnahtari);
+  }
+
+  // "Okul · İlçe" satırı; okul etiketliyse altında küçük rozet ve etiket metni.
+  function okulSatiri(yazi, anahtar) {
+    const okul = el("p", "detay-okul", yazi);
+    const etiket = okulEtiketi.get(anahtar);
+    if (etiket) {
+      okul.classList.add("etiketli");
+      const satir = el("span", "detay-etiket");
+      satir.append(rozetDugumu(), document.createTextNode(etiketMetni(etiket)));
+      okul.append(satir);
+    }
+    return okul;
+  }
+
+  // Toplam öğrenci, kız/erkek çubuğu ve dağılım (etkinlik ve maraton ekibi).
+  function ogrenciBlogu(k, ek) {
+    const ogrenci = el("div", "ogrenci");
+    const sayi = el("p", "ogrenci-toplam");
+    sayi.append(el("strong", "", String(k.toplamOgrenci)), document.createTextNode(ek));
+    ogrenci.append(sayi);
+    if (k.toplamOgrenci > 0) {
+      const cubuk = el("div", "ogrenci-cubuk");
+      const kiz = el("span", "cubuk-kiz");
+      kiz.style.width = `${(k.kizSayisi / k.toplamOgrenci) * 100}%`;
+      cubuk.append(kiz, el("span", "cubuk-erkek"));
+      cubuk.setAttribute("aria-hidden", "true");
+      ogrenci.append(cubuk);
+    }
+    const dagilim = el("p", "ogrenci-dagilim");
+    dagilim.append(el("span", "nokta-kiz"), document.createTextNode(` ${k.kizSayisi} kız   `),
+                   el("span", "nokta-erkek"), document.createTextNode(` ${k.erkekSayisi} erkek`));
+    ogrenci.append(dagilim);
+    return ogrenci;
+  }
+
+  // Okulun maraton ekibi varsa etkinlik / etiket kartının sonunda ekip kartına bağlantı.
+  function maratonBaglantisi(anahtar) {
+    const ekipler = okulEkipleri.get(anahtar);
+    if (!ekipler) return;
+    const liste = el("ul", "diger-liste");
+    for (const ekip of ekipler) {
+      const dugme = el("button", "diger-dugme");
+      dugme.type = "button";
+      dugme.append(maratonDugumu(), el("span", "diger-ad", ekip.projeAdi), el("span", "diger-tarih", ekip.tema));
+      dugme.addEventListener("click", () => maratonAc(anahtar));
+      const oge = el("li");
+      oge.append(dugme);
+      liste.append(oge);
+    }
+    icerik.append(el("h3", "", maraton.ad), liste);
+  }
+
+  // Maraton kartı: okuldaki ekipler, her birinin bilgileri ve çalışma yazıları.
+  function maratonDoldur(anahtar) {
+    icerik.replaceChildren();
+    const ekipler = okulEkipleri.get(anahtar);
+    const ilk = ekipler[0];
+    const tek = ekipler.length === 1;
+    const rozet = el("span", "rozet");
+    rozet.append(maratonDugumu(), document.createTextNode(maraton.ad));
+    const baslik = el("h2", "detay-baslik", tek ? ilk.projeAdi : ilk.okulAdi);
+    baslik.id = "detay-baslik";
+    const okul = okulSatiri(tek ? `${ilk.okulAdi} · ${ilk.ilce}` : `${ilk.ilce} · ${ekipler.length} ekip`, anahtar);
+    icerik.append(rozet, baslik, okul);
+
+    for (const ekip of ekipler) {
+      const bolum = el("section", "maraton-ekip");
+      if (!tek) bolum.append(el("h3", "maraton-proje", ekip.projeAdi));
+      const bilgiler = el("dl", "bilgiler");
+      if (ekip.tema) bilgiSatiri(bilgiler, "Tema", ekip.tema, true);
+      if (ekip.ogretmenAdi) bilgiSatiri(bilgiler, "Öğretmen", ekip.ogretmenAdi);
+      bolum.append(bilgiler, ogrenciBlogu(ekip, " öğrenciyle çalışıyor"));
+
+      bolum.append(el(tek ? "h3" : "h4", "gunluk-baslik", "Çalışma günlüğü"));
+      if (ekip.gunluk.length) {
+        const liste = el("ol", "gunluk");
+        for (const g of ekip.gunluk) {
+          const oge = el("li");
+          const zaman = el("time", "gunluk-tarih", tarihYaz(g));
+          zaman.dateTime = g.tarih;
+          oge.append(zaman, el("p", "gunluk-metin", g.metin));
+          liste.append(oge);
+        }
+        bolum.append(liste);
+      } else {
+        bolum.append(el("p", "detay-not", "Henüz çalışma yazısı yok."));
+      }
+      icerik.append(bolum);
+    }
+
+    const etkinlikler = okulunEtkinlikleri(anahtar);
+    if (etkinlikler.length) icerik.append(el("h3", "", "Bu okulun etkinlikleri"), etkinlikListesi(etkinlikler));
   }
 
   function okulunEtkinlikleri(anahtar) {
@@ -819,6 +1031,7 @@ function detayPaneliKur(harita, tumKayitlar, etiketler) {
     const etkinlikler = okulunEtkinlikleri(etiket.okulAnahtari);
     if (etkinlikler.length) icerik.append(el("h3", "", "Bu okulun etkinlikleri"), etkinlikListesi(etkinlikler));
     else icerik.append(el("p", "detay-not", "Bu okulun haritada henüz etkinliği yok."));
+    maratonBaglantisi(etiket.okulAnahtari);
   }
 
   function ac(kayit) {
@@ -831,6 +1044,12 @@ function detayPaneliKur(harita, tumKayitlar, etiketler) {
     etiketDoldur(etiket);
     isaretciVurgula(null);
     paneliAc(isaretci);
+  }
+
+  function maratonAc(anahtar) {
+    maratonDoldur(anahtar);
+    isaretciVurgula(null);
+    paneliAc(maratonIsaretcileri.get(anahtar));
   }
 
   function paneliAc(isaretci) {
@@ -866,8 +1085,10 @@ function detayPaneliKur(harita, tumKayitlar, etiketler) {
   return {
     ac,
     etiketAc,
+    maratonAc,
     kapat,
     isaretciler,
+    maratonIsaretcileri,
     seciliId: () => secili?.id,
     acikMi: () => panel.classList.contains("acik")
   };
@@ -897,13 +1118,15 @@ function lejantEkle(harita) {
   };
   lejant.addTo(harita);
 
-  // Etiketli okul varsa veri yüklendikten sonra eklenir.
+  // Etiketli okul ve maraton ekibi varsa veri yüklendikten sonra eklenir.
+  const satirEkle = (simge, yazi) => {
+    const oge = el("li", "lejant-ayrac");
+    oge.append(simge, document.createTextNode(yazi));
+    lejant.getContainer().querySelector("ul").append(oge);
+  };
   return {
-    etiketSatiriEkle() {
-      const oge = el("li", "lejant-ayrac");
-      oge.append(rozetDugumu(), document.createTextNode(ETIKET_ADI));
-      lejant.getContainer().querySelector("ul").append(oge);
-    }
+    etiketSatiriEkle: () => satirEkle(rozetDugumu(), ETIKET_ADI),
+    maratonSatiriEkle: (ad) => satirEkle(maratonDugumu(), ad)
   };
 }
 
@@ -970,10 +1193,16 @@ async function baslat() {
     const ilceAdlari = new Set(ilceGeolari.keys());
     const kayitlar = kayitlariDogrula(veri.etkinlikler, ilceAdlari);
     const etiketler = etiketleriDogrula(veri.etiketliOkullar, ilceAdlari);
-    const detay = detayPaneliKur(harita, kayitlar, etiketler);
+    const maraton = maratonDogrula(veri.maraton, ilceAdlari);
+    const detay = detayPaneliKur(harita, kayitlar, etiketler, maraton);
     const isaretler = isaretcileriCiz(harita, kayitlar, ilceGeolari, detay);
     rozetleriCiz(harita, etiketler, kayitlar, ilceGeolari, detay);
     if (etiketler.length) lejant.etiketSatiriEkle();
+    if (maraton?.ekipler.length) {
+      maratonCiz(harita, maraton, kayitlar, etiketler, ilceGeolari, detay);
+      lejant.maratonSatiriEkle(maraton.ad);
+      gizlilikMaratonKur(maraton.ad);
+    }
 
     // İlçeye tıklamak yalnızca ilçeyi vurgular ve yakınlaştırır (özet
     // değişmez); aynı ilçeye tekrar tıklamak seçimi kaldırır. Detay kartı
@@ -994,7 +1223,8 @@ async function baslat() {
       if (detay.acikMi()) { detay.kapat(); return; }
       if (seciliIlce) ilceSec("");
     });
-    if (YEREL_MI) durumGoster(`Yerel test: uydurma veri gösteriliyor (${kayitlar.length} etkinlik).`);
+    if (YEREL_MI) durumGoster(`Yerel test: uydurma veri gösteriliyor (${kayitlar.length} etkinlik` +
+      (maraton ? `, ${maraton.ekipler.length} maraton ekibi).` : ")."));
     else durumGizle();
   } catch (hata) {
     console.error(hata);

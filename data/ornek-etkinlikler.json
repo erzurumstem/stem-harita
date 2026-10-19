@@ -662,5 +662,145 @@
       "tur": "altin",
       "yil": "2023"
     }
-  ]
+  ],
+  "maraton": {
+    "ad": "Örnek STEM Proje Maratonu",
+    "ekipler": [
+      {
+        "kod": "M01",
+        "okulAdi": "Örnek Çınar İlkokulu",
+        "ilce": "Yakutiye",
+        "projeAdi": "Deprem Uyarı Masası",
+        "tema": "Afet Yönetimi ve Dayanıklı Şehirler",
+        "ogretmenAdi": "Elif T.",
+        "kizSayisi": 7,
+        "erkekSayisi": 5,
+        "gunluk": [
+          {
+            "tarih": "2026-11-12",
+            "metin": "Uydurma test yazısı. Titreşim algılayıcısını devre kartına bağlayıp ilk denemeleri yaptık."
+          },
+          {
+            "tarih": "2026-10-20",
+            "metin": "Uydurma test yazısı; 400 karakter sınırını aşıp sitede kırpıldığını denemek içindir. Uydurma test yazısı; 400 karakter sınırını aşıp sitede kırpıldığını denemek içindir. Uydurma test yazısı; 400 karakter sınırını aşıp sitede kırpıldığını denemek içindir. Uydurma test yazısı; 400 karakter sınırını aşıp sitede kırpıldığını denemek içindir. Uydurma test yazısı; 400 karakter sınırını aşıp sitede kırpıldığını denemek içindir. Uydurma test yazısı; 400 karakter sınırını aşıp sitede kırpıldığını denemek içindir."
+          },
+          {
+            "tarih": "2026-10-08",
+            "metin": "Uydurma test yazısı. Ekip olarak deprem anında okulda neler yaşandığını konuştuk ve proje fikrimizi belirledik."
+          },
+          {
+            "tarih": "2026-13-45",
+            "metin": "Geçersiz tarihli yazı; sitede görünmemeli."
+          },
+          {
+            "tarih": "2026-10-15",
+            "metin": ""
+          }
+        ]
+      },
+      {
+        "kod": "M02",
+        "okulAdi": "Örnek Çınar İlkokulu",
+        "ilce": "Yakutiye",
+        "projeAdi": "Akıllı Kompost Kutusu",
+        "tema": "Döngüsel Ekonomi ve Atık Yönetimi",
+        "ogretmenAdi": "Elif T.",
+        "kizSayisi": 4,
+        "erkekSayisi": 6,
+        "gunluk": [
+          {
+            "tarih": "2026-10-28",
+            "metin": "Uydurma test yazısı. Okulun kantin atıklarını bir hafta boyunca tarttık."
+          }
+        ]
+      },
+      {
+        "kod": "M03",
+        "okulAdi": "Örnek Rüzgâr Ortaokulu",
+        "ilce": "Pasinler",
+        "projeAdi": "Rüzgârdan Elektrik",
+        "tema": "Yenilenebilir Enerji ve Verimlilik",
+        "ogretmenAdi": "Murat K.",
+        "kizSayisi": 6,
+        "erkekSayisi": 6,
+        "gunluk": []
+      },
+      {
+        "kod": "M04",
+        "okulAdi": "Örnek Yıldız İlkokulu",
+        "ilce": "Oltu",
+        "projeAdi": "Küçük Astronotlar",
+        "tema": "Havacılık ve Uzay",
+        "ogretmenAdi": "Zeynep A.",
+        "kizSayisi": 9,
+        "erkekSayisi": 8,
+        "gunluk": [
+          {
+            "tarih": "2026-11-03",
+            "metin": "Uydurma test yazısı. Su roketi için şişe ve kanat tasarımlarını çizdik."
+          }
+        ]
+      },
+      {
+        "kod": "M05",
+        "okulAdi": "Örnek Kar Ortaokulu",
+        "ilce": "Uzundere",
+        "projeAdi": "Sera Takip Sistemi",
+        "tema": "Akıllı Tarım ve Gıda Güvenliği",
+        "ogretmenAdi": "Can D.",
+        "kizSayisi": 5,
+        "erkekSayisi": 3,
+        "gunluk": [
+          {
+            "tarih": "2026-10-30",
+            "metin": "Uydurma test yazısı. Nem algılayıcısı ile ilk ölçümleri aldık."
+          }
+        ]
+      },
+      {
+        "kod": "M06",
+        "okulAdi": "Örnek Dağ Lisesi",
+        "ilce": "Askale",
+        "projeAdi": "Geçersiz ilçe",
+        "tema": "Havacılık ve Uzay",
+        "ogretmenAdi": "Test K.",
+        "kizSayisi": 1,
+        "erkekSayisi": 1,
+        "gunluk": []
+      },
+      {
+        "kod": "M07",
+        "okulAdi": "",
+        "ilce": "Narman",
+        "projeAdi": "Okul adı boş",
+        "tema": "Havacılık ve Uzay",
+        "ogretmenAdi": "Test K.",
+        "kizSayisi": 1,
+        "erkekSayisi": 1,
+        "gunluk": []
+      },
+      {
+        "kod": "M01",
+        "okulAdi": "Örnek Lale Ortaokulu",
+        "ilce": "Yakutiye",
+        "projeAdi": "Tekrarlanan kod",
+        "tema": "Havacılık ve Uzay",
+        "ogretmenAdi": "Test K.",
+        "kizSayisi": 1,
+        "erkekSayisi": 1,
+        "gunluk": []
+      },
+      {
+        "kod": "M08",
+        "okulAdi": "Örnek Lale Ortaokulu",
+        "ilce": "Yakutiye",
+        "projeAdi": "",
+        "tema": "Havacılık ve Uzay",
+        "ogretmenAdi": "Test K.",
+        "kizSayisi": 1,
+        "erkekSayisi": 1,
+        "gunluk": []
+      }
+    ]
+  }
 }

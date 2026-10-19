@@ -211,6 +211,19 @@ a { color: var(--vurgu); }
 .etiket-rozeti:focus-visible svg { filter: drop-shadow(0 0 3px var(--vurgu)); }
 .rozet-kucuk { flex: none; width: 14px; height: 18px; }
 
+/* Proje Maratonu simgesi (roket) */
+.maraton-simgesi { background: none; border: none; cursor: pointer; }
+.maraton-simgesi svg {
+  display: block;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, .4));
+  transition: transform .15s ease;
+}
+.maraton-simgesi:hover svg,
+.maraton-simgesi:focus-visible svg { transform: scale(1.15); }
+.maraton-simgesi:focus { outline: none; }
+.maraton-simgesi:focus-visible svg { filter: drop-shadow(0 0 3px var(--vurgu)); }
+.maraton-kucuk { flex: none; width: 16px; height: 16px; }
+
 /* Üstüne gelince çıkan kutu */
 .leaflet-tooltip.ipucu-kutu { white-space: normal; width: max-content; max-width: 240px; }
 .ipucu { display: grid; gap: 1px; }
@@ -241,6 +254,7 @@ a { color: var(--vurgu); }
 .lejant li { display: flex; align-items: center; gap: 8px; }
 .lejant li.lejant-ayrac { border-top: 1px solid var(--cizgi); padding-top: 6px; margin-top: 2px; }
 .lejant .rozet-kucuk { width: 12px; height: 15px; }
+.lejant .maraton-kucuk { width: 14px; height: 14px; margin-left: -1px; }
 
 /* ------------------------------------------------------------------ */
 /* Detay paneli: telefonda alttan açılan sayfa */
@@ -330,6 +344,7 @@ a { color: var(--vurgu); }
 }
 .bilgi dt { font-size: .75rem; color: var(--metin-soluk); text-transform: uppercase; letter-spacing: .03em; }
 .bilgi dd { margin: 2px 0 0; font-weight: 600; overflow-wrap: anywhere; }
+.bilgi-genis { grid-column: 1 / -1; }
 
 .ogrenci {
   padding: 12px 14px;
@@ -380,6 +395,34 @@ a { color: var(--vurgu); }
 .diger-dugme:hover { border-color: var(--vurgu); }
 .diger-ad { font-weight: 600; overflow-wrap: anywhere; }
 .diger-tarih { grid-column: 2; font-size: .8rem; color: var(--metin-soluk); }
+
+/* Maraton kartı: ekipler ve çalışma günlüğü */
+.maraton-ekip + .maraton-ekip { border-top: 1px solid var(--cizgi); padding-top: 14px; }
+.maraton-ekip { margin-bottom: 16px; }
+.detay .maraton-proje { font-size: 1.05rem; overflow-wrap: anywhere; }
+.detay h4 { margin: 0 0 6px; font-size: .9rem; }
+.gunluk {
+  list-style: none;
+  margin: 0;
+  padding: 0 0 0 14px;
+  border-left: 2px solid var(--cizgi);
+  display: grid;
+  gap: 12px;
+}
+.gunluk li { position: relative; }
+.gunluk li::before {             /* zaman çizelgesi noktası */
+  content: "";
+  position: absolute;
+  left: -20px;
+  top: 5px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--yuzey);
+  border: 2px solid var(--vurgu);
+}
+.gunluk-tarih { display: block; font-size: .8rem; font-weight: 600; color: var(--metin-soluk); }
+.gunluk-metin { margin: 2px 0 0; overflow-wrap: anywhere; }
 
 /* Masaüstü: sağdan açılan panel */
 @media (min-width: 768px) {
@@ -439,5 +482,5 @@ a { color: var(--vurgu); }
 
 @media (prefers-reduced-motion: reduce) {
   .form-paneli, .form-paneli.acik { transition: none; }
-  .detay, .detay.acik, .pin svg, .etiket-rozeti svg { transition: none; }
+  .detay, .detay.acik, .pin svg, .etiket-rozeti svg, .maraton-simgesi svg { transition: none; }
 }
