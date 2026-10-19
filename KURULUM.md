@@ -103,6 +103,7 @@ gerekmez; her adım tıklanacak yerleriyle yazılmıştır.
    | `iletisim` | Silme/düzeltme talepleri için e-posta | `"ilinizstem@gmail.com"` |
    | `siteAdresi` | 4. adımdaki site adresi | `"https://kullaniciadi.github.io/stem-harita/"` |
    | `saklamaTarihi` | Yanıtların silineceği tarih | `"31 Ağustos 2027"` |
+   | `maraton` | **İsteğe bağlı** proje maratonu (bkz. [Proje Maratonu](#proje-maratonu-isteğe-bağlı)); kullanmayacaksanız bu bloğu silin | `{ ad: "Kahramanmaraş STEM Proje Maratonu", baslangic: "2026-10-01", bitis: "2027-06-30", temalar: ["…", "…"] }` |
    | `ilceler` | 3. adımda not ettiğiniz satır | `["Afşin", "Andırın", …]` |
 
 6. **Kaydet** simgesine basın (ya da `Ctrl+S` / `⌘S`).
@@ -125,6 +126,8 @@ gerekmez; her adım tıklanacak yerleriyle yazılmıştır.
 
 Kurulum formu kendisi oluşturur: sorular, sınıfa göre şube sayfası,
 aydınlatma metni ve açık rıza kutuları dahil. E-posta toplanmaz.
+`Ayarlar`'da `maraton` bloğu varsa formun başına "Ne eklemek istiyorsunuz?"
+sorusu ve maraton sayfaları da eklenir, tabloda **Maraton** sayfası kurulur.
 
 ### 5.4 Veri bağlantısını yayımlayın
 1. Apps Script'te sağ üstte **Dağıt → Yeni dağıtım**.
@@ -206,6 +209,48 @@ Birkaç dakika sonra siteniz güncellenir.
   **"Etiketli okullar"** tablosunda "Onaylı etkinlik" 0 görünüyorsa ve okulun
   etkinliği olduğunu biliyorsanız adı etkinlik kayıtlarındaki gibi yazın.
 
+## Proje Maratonu (isteğe bağlı)
+
+İlinizde öğretmen ekiplerinin aylarca süren bir proje maratonu varsa, her
+ekip haritada okulunun yanında **roket simgesiyle** görünür; kartında proje
+adı, tema, öğretmen, öğrenci sayıları ve ekibin **çalışma günlüğü** (en yeni
+yazı en üstte) yer alır.
+
+**Kurmak için:** `Ayarlar`'a `maraton` bloğunu ekleyin (ad, başlangıç ve
+bitiş tarihi, tema listesi). Kurulumu yapmışsanız yeni `Kod.gs`'yi yapıştırıp
+**formuGuncelle**'yi bir kez çalıştırın: mevcut form **yerinde** güncellenir
+(adresi ve yanıtları değişmez). Sonra web uygulamasını **Yeni sürüm** ile
+güncelleyin.
+
+**Öğretmen ne yapar?** Aynı formun ilk sorusunda üç seçenek vardır:
+- **STEM etkinliği** — bugünkü etkinlik kaydı.
+- **Proje Maratonu: ekip kaydı (ilk kez)** — her ekip için **bir kez**:
+  ilçe, okul, ad soyad, proje adı, tema, ekipteki kız ve erkek öğrenci
+  sayısı. İki ekibi olan öğretmen iki kayıt yapar.
+- **Proje Maratonu: çalışma yazısı** — istediği zaman, istediği sıklıkla:
+  ekibini listeden seçer, adını, tarihi ve 2-3 cümlelik yazısını girer.
+
+**Siz ne yaparsınız?**
+- **Ekip kaydını onaylayın** (Onay kutusu). Kayıt kendiliğinden **Maraton**
+  sayfasına aktarılır, kod alır (M01, M02…), haritada görünür ve formdaki
+  ekip listesine eklenir. Yanıtlar sayfasındaki **Ekip kodu** sütununu betik
+  doldurur; değiştirmeyin.
+- **Çalışma yazılarını onaylayın.** Onaydan önce Özet'teki maraton tablolarına
+  bakın: "Ad ekip öğretmeniyle uyuşmuyor" (yanlış ekip seçilmiş olabilir),
+  "olası mükerrer kayıt", "öğrenci sayısı 0", "yazıda bağlantı var" gibi
+  uyarılar orada görünür. Yazıda öğrenci adı varsa onaylamadan düzeltin.
+- **Sonraki değişiklikler** (öğrenci sayısı, proje adı vb.) **Maraton**
+  sayfasında yapılır. Ekibi haritadan kaldırmak için **Yayında** kutusunu
+  kaldırın. Ekip kodlarını değiştirmeyin; yazılar koda bağlıdır.
+- Ekibi formu beklemeden kendiniz de girebilirsiniz: Maraton sayfasına yeni
+  satır yazın, kodu boş bırakın (kendiliğinden verilir) ve **Yayında**'yı
+  işaretleyin.
+- Liste kendiliğinden güncellenmezse: **STEM Harita → Maraton: onaylı ekip
+  kayıtlarını aktar, ekip listesini güncelle**.
+
+Maraton ekipleri ve yazıları Özet'teki il geneli etkinlik sayılarına
+karışmaz; maratonun kendi tablosu ve toplamı vardır.
+
 ## Formu değiştirmek isterseniz
 
 Soruları Apps Script'teki `Kod.gs` üzerinden değiştirip **formuYenidenKur**
@@ -241,6 +286,9 @@ eşleşmezse veriler siteye yanlış aktarılır.
   Fotoğraf veya görsel alanı eklemeyin.
 - Öğretmen adı sitede **kısaltılmış** görünür (ör. "Ayşe Y."); kısaltma
   Google tarafında yapılır, tam ad siteye hiç gitmez.
+- Proje maratonu kullanıyorsanız ekip kayıtları ve çalışma yazıları da
+  **ancak siz onayladıktan sonra** yayımlanır; aydınlatma metni ve rıza
+  kutuları maraton sayfalarında da bulunur.
 - **Okulların gerçek konumu** kullanılmaz; haritadaki noktalar temsilîdir.
 - **Site herkese açıktır ve GitHub deposu da herkese açıktır.** Depoya gerçek
   kişi adı, e-posta veya form yanıtı eklemeyin. `Ayarlar` dosyası yalnızca

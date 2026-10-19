@@ -11,6 +11,8 @@ sunucusuz ve ücretsiz bir site. EU Code Week haritasının il ölçeğindeki be
 - İşaretçi konumları **temsilîdir**; okulların gerçek konumu kullanılmaz.
 - Öğrenci verisi toplanmaz; öğretmen adı kısaltılmış gösterilir
   (ör. "Ayşe Y."). Çerez ve analitik yoktur.
+- İsteğe bağlı **Proje Maratonu**: öğretmen ekipleri bir kez kaydolur,
+  çalışmalarını yazdıkça ekibin harita kartında bir günlük oluşur.
 
 ## Kendi ilinize kurmak için
 
